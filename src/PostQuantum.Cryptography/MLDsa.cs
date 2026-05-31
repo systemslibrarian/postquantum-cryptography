@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using PostQuantum.Cryptography.Internal;
 
@@ -40,7 +41,13 @@ internal static class MLDsaLimits
 /// An ML-DSA public key, used to verify signatures. Holds no secret material.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Algorithm-aware across ML-DSA-44/65/87; sizes come from the underlying key.
+/// </para>
+/// <para>
+/// <b>Thread-safety:</b> instances are <i>not</i> thread-safe. Use one
+/// instance per thread (or per request); see <c>SECURITY.md</c>.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -48,12 +55,17 @@ internal static class MLDsaLimits
 /// bool ok = verifier.Verify(message, signature);
 /// </code>
 /// </example>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class MLDsaPublicKey : IDisposable
 {
     private readonly MLDsa _dsa;
     private bool _disposed;
 
     internal MLDsaPublicKey(MLDsa dsa) => _dsa = dsa;
+
+    private string DebuggerDisplay => _disposed
+        ? "MLDsaPublicKey (disposed)"
+        : $"MLDsaPublicKey ({_dsa.Algorithm.Name})";
 
     /// <summary>The ML-DSA parameter set this key belongs to.</summary>
     public MLDsaAlgorithm Algorithm => _dsa.Algorithm;
@@ -113,9 +125,15 @@ public sealed class MLDsaPublicKey : IDisposable
 /// material; dispose it when finished to release the underlying secrets.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Algorithm-aware across ML-DSA-44/65/87. The optional <c>context</c> on signing
 /// and verification (FIPS 204 §5.2) binds a signature to a usage domain; both
 /// sides must agree on it.
+/// </para>
+/// <para>
+/// <b>Thread-safety:</b> instances are <i>not</i> thread-safe. Use one
+/// instance per thread (or per request); see <c>SECURITY.md</c>.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -129,12 +147,17 @@ public sealed class MLDsaPublicKey : IDisposable
 /// signer.SignData(message, dest);
 /// </code>
 /// </example>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class MLDsaPrivateKey : IDisposable
 {
     private readonly MLDsa _dsa;
     private bool _disposed;
 
     internal MLDsaPrivateKey(MLDsa dsa) => _dsa = dsa;
+
+    private string DebuggerDisplay => _disposed
+        ? "MLDsaPrivateKey (disposed)"
+        : $"MLDsaPrivateKey ({_dsa.Algorithm.Name}, secret material redacted)";
 
     /// <summary>The ML-DSA parameter set this key belongs to.</summary>
     public MLDsaAlgorithm Algorithm => _dsa.Algorithm;

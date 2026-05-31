@@ -7,6 +7,36 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **Thread-safety contract documented** in `SECURITY.md` and on every public
+  key type's `<remarks>` — instances are not thread-safe; static facades are.
+  New `ThreadSafetyTests` exercises parallel use across distinct instances
+  to lock in the safe pattern.
+- **`[DebuggerDisplay]`** on every public key type, including
+  `KemEncapsulation`. Watch windows now show `MLKemPrivateKey (ML-KEM-768, secret material redacted)`
+  instead of dumping internal byte arrays into the IDE.
+- **Disposal & cross-algorithm test sweep** (`DisposalAndCrossAlgorithmTests`):
+  every disposable type tolerates double-Dispose; use-after-dispose throws
+  `ObjectDisposedException` on every export/operation path; decapsulating a
+  wrong-parameter-set ciphertext fails at the wrapper boundary with a clear
+  `ArgumentException`, never inside the BCL.
+- **In-process smoke fuzzer** (`SmokeFuzzTests`) — 5,000 pseudo-random
+  inputs per target on every CI run. Asserts implicit-rejection determinism
+  on KEM decap, false-on-garbage on signature verify, and documented
+  exception types only on importer paths. Complements the AFL-driven harness
+  in `fuzz/`.
+- **`docs/PERFORMANCE.md`** — measured BenchmarkDotNet results for every
+  primitive (ML-KEM, ML-DSA, X-Wing — allocating and Span overloads) with
+  reproduction instructions and "picking based on workload" guidance.
+- **Sample 06 — `06-SignedPackageDistribution`**: real-world container-/
+  package-signing pattern. Publisher signs an artifact + JSON manifest with
+  a domain-bound context; consumer pins the public key and verifies, with
+  negative tests for tampered artifact, tampered signature, and wrong
+  publisher key.
+- **README badges**: NuGet version, preview version, downloads, CI status,
+  CodeQL status, license, .NET 10, AOT compatibility.
+
 ## [0.1.0-preview.2] — 2026-05-31
 
 ### Added

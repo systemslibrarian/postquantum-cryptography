@@ -17,6 +17,7 @@ dotnet run --project samples/02-SignAndVerifyFiles
 dotnet run --project samples/03-HybridFileEncryption
 dotnet run --project samples/04-ZeroAllocHotLoop
 dotnet run --project samples/05-DetachedSignatureCli -- help
+dotnet run --project samples/06-SignedPackageDistribution
 ```
 
 The samples skip cleanly with a clear message on hosts where the runtime
@@ -32,6 +33,7 @@ doesn't expose ML-KEM / ML-DSA (see the platform matrix in the top-level
 | 03 | [`03-HybridFileEncryption`](03-HybridFileEncryption/)               | Realistic "encrypt to a public key" envelope: X-Wing KEM → HKDF-SHA-256 → AES-GCM with associated data. |
 | 04 | [`04-ZeroAllocHotLoop`](04-ZeroAllocHotLoop/)                       | Compare the allocating overloads to the `Span<byte>` overloads with byte counts and GC counts.          |
 | 05 | [`05-DetachedSignatureCli`](05-DetachedSignatureCli/)               | Build a small but realistic `pqcsign` CLI (`keygen` / `sign` / `verify`) with proper exit codes.        |
+| 06 | [`06-SignedPackageDistribution`](06-SignedPackageDistribution/)     | Software-update / container-signing pattern: publisher signs an artifact + JSON manifest with a domain-bound context; consumer pins the public key and verifies (incl. tampering negative tests). |
 
 ## Reading order
 

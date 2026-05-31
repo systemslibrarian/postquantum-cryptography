@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using PostQuantum.Cryptography.Internal;
 
@@ -152,12 +153,19 @@ public static class XWing
 /// <see cref="XWingPrivateKey"/> uses for the decapsulation side. Dispose
 /// when finished to release the underlying native handle.
 /// </summary>
+/// <remarks>
+/// <b>Thread-safety:</b> instances are <i>not</i> thread-safe. Use one
+/// instance per thread (or per request); see <c>SECURITY.md</c>.
+/// </remarks>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class XWingPublicKey : IDisposable
 {
     private readonly byte[] _pkM; // ML-KEM-768 encapsulation key (1184 bytes)
     private readonly byte[] _pkX; // X25519 public key (32 bytes)
     private readonly MLKem _mlkem; // imported once, reused across Encapsulate calls
     private bool _disposed;
+
+    private string DebuggerDisplay => _disposed ? "XWingPublicKey (disposed)" : "XWingPublicKey";
 
     internal XWingPublicKey(byte[] pkM, byte[] pkX)
     {
@@ -260,6 +268,9 @@ public sealed class XWingPublicKey : IDisposable
 /// that cached expansion instead of re-deriving it, which is the recommended
 /// pattern when one key decapsulates multiple ciphertexts.
 ///
+/// <b>Thread-safety:</b> instances are <i>not</i> thread-safe. Use one
+/// instance per thread (or per request); see <c>SECURITY.md</c>.
+///
 /// In the spec's terms, the 32-byte seed returned by
 /// <see cref="ExportDecapsulationKey"/> is the <em>packed</em> form, and importing
 /// it via <see cref="XWing.ImportDecapsulationKey"/> performs the <em>unpack</em>
@@ -267,6 +278,7 @@ public sealed class XWingPublicKey : IDisposable
 /// spec's requirement that it MUST NOT be transmitted between implementations
 /// (doing so would break X-Wing's MAL-BIND-K-PK / MAL-BIND-K-CT binding).
 /// </remarks>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class XWingPrivateKey : IDisposable
 {
     private readonly byte[] _seed; // 32-byte decapsulation key
@@ -275,6 +287,8 @@ public sealed class XWingPrivateKey : IDisposable
     private readonly byte[] _pkM;  // ML-KEM-768 encapsulation key (1184 bytes)
     private readonly byte[] _pkX;  // X25519 public key (32 bytes)
     private bool _disposed;
+
+    private string DebuggerDisplay => _disposed ? "XWingPrivateKey (disposed)" : "XWingPrivateKey (secret material redacted)";
 
     private XWingPrivateKey(byte[] seed, MLKem mlkem, byte[] skX, byte[] pkM, byte[] pkX)
     {

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using PostQuantum.Cryptography.Internal;
 
@@ -16,9 +17,17 @@ namespace PostQuantum.Cryptography;
 /// An ML-KEM public key (encapsulation key). Holds no secret material.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This type is algorithm-aware: the parameter set (ML-KEM-512/768/1024) and all
 /// sizes are taken from the underlying key, so it works uniformly across the
 /// facades <see cref="MLKem512"/>, <see cref="MLKem768"/>, and <see cref="MLKem1024"/>.
+/// </para>
+/// <para>
+/// <b>Thread-safety:</b> instances are <i>not</i> thread-safe. Do not invoke
+/// methods on the same instance from multiple threads concurrently. See
+/// <c>SECURITY.md</c> for the full thread-safety contract and safe usage
+/// patterns.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -28,12 +37,17 @@ namespace PostQuantum.Cryptography;
 /// // enc.SharedSecret is used to key a symmetric algorithm.
 /// </code>
 /// </example>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class MLKemPublicKey : IDisposable
 {
     private readonly MLKem _kem;
     private bool _disposed;
 
     internal MLKemPublicKey(MLKem kem) => _kem = kem;
+
+    private string DebuggerDisplay => _disposed
+        ? "MLKemPublicKey (disposed)"
+        : $"MLKemPublicKey ({_kem.Algorithm.Name})";
 
     /// <summary>The ML-KEM parameter set this key belongs to.</summary>
     public MLKemAlgorithm Algorithm => _kem.Algorithm;
@@ -112,8 +126,14 @@ public sealed class MLKemPublicKey : IDisposable
 /// dispose it when finished to release the underlying secrets.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This type is algorithm-aware (ML-KEM-512/768/1024); all sizes are taken from
 /// the underlying key.
+/// </para>
+/// <para>
+/// <b>Thread-safety:</b> instances are <i>not</i> thread-safe. Use one
+/// instance per thread (or per request); see <c>SECURITY.md</c>.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -125,12 +145,17 @@ public sealed class MLKemPublicKey : IDisposable
 /// byte[] sharedSecret = restored.Decapsulate(ciphertext);
 /// </code>
 /// </example>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class MLKemPrivateKey : IDisposable
 {
     private readonly MLKem _kem;
     private bool _disposed;
 
     internal MLKemPrivateKey(MLKem kem) => _kem = kem;
+
+    private string DebuggerDisplay => _disposed
+        ? "MLKemPrivateKey (disposed)"
+        : $"MLKemPrivateKey ({_kem.Algorithm.Name}, secret material redacted)";
 
     /// <summary>The ML-KEM parameter set this key belongs to.</summary>
     public MLKemAlgorithm Algorithm => _kem.Algorithm;

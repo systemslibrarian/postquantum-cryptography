@@ -5,7 +5,8 @@ Additional documentation for `PostQuantum.Cryptography` lives here.
 Start here:
 
 - [`RECIPES.md`](RECIPES.md) — pattern cookbook: "how do I do X?" answers with code snippets, cross-linked to runnable samples.
-- [`../samples/`](../samples/) — five focused, runnable mini-apps covering hybrid KEM, signing, file encryption, zero-alloc loops, and a small CLI.
+- [`../samples/`](../samples/) — six focused, runnable mini-apps covering hybrid KEM, signing, file encryption, zero-alloc loops, a CLI, and signed-package distribution.
+- [`PERFORMANCE.md`](PERFORMANCE.md) — measured ops/sec, time per op, and per-op allocations for every primitive, plus reproducible benchmark instructions.
 
 Reference:
 

@@ -1,5 +1,14 @@
 # PostQuantum.Cryptography
 
+[![NuGet](https://img.shields.io/nuget/v/PostQuantum.Cryptography?label=NuGet&color=blue)](https://www.nuget.org/packages/PostQuantum.Cryptography)
+[![NuGet preview](https://img.shields.io/nuget/vpre/PostQuantum.Cryptography?label=preview&color=blueviolet)](https://www.nuget.org/packages/PostQuantum.Cryptography)
+[![Downloads](https://img.shields.io/nuget/dt/PostQuantum.Cryptography?label=downloads&color=brightgreen)](https://www.nuget.org/packages/PostQuantum.Cryptography)
+[![CI](https://github.com/systemslibrarian/postquantum-cryptography/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/systemslibrarian/postquantum-cryptography/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/systemslibrarian/postquantum-cryptography/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/systemslibrarian/postquantum-cryptography/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
+[![AOT compatible](https://img.shields.io/badge/AOT-compatible-success)](src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj)
+
 **Clean, high-level, secure-by-default post-quantum cryptography primitives for .NET 10.**
 
 `PostQuantum.Cryptography` is the foundation library of the `PostQuantum.*` ecosystem. It wraps the native .NET 10 BCL implementations of the NIST-standardized post-quantum algorithms in small, safe, hard-to-misuse APIs, and adds a spec-compliant **X-Wing** hybrid KEM for migrations that want both classical and post-quantum assurance.

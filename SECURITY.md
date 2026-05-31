@@ -19,6 +19,23 @@ The cryptographic strength of this library rests on two foundations:
 - **Secret hygiene.** Private-key types implement `IDisposable` and zero key material and intermediate shared secrets on disposal.
 - **Spec-faithful X-Wing.** The combiner, key expansion, and encoding follow `draft-connolly-cfrg-xwing-kem` exactly, including the `XWingLabel` and concatenation order.
 
+## Thread-safety
+
+These types **are not thread-safe**: do not invoke instance methods on the same key object from multiple threads concurrently. This matches the contract of the underlying `System.Security.Cryptography.MLKem` / `MLDsa` BCL types, which we deliberately don't paper over with internal locks (that would slow the common single-threaded case and would mask incorrect concurrency in caller code).
+
+Safe usage patterns:
+
+- **Per-thread keys**: each thread owns its own `MLKemPrivateKey` / `MLDsaPrivateKey` / `XWingPrivateKey` (cheap to import from the same seed if needed).
+- **Per-request keys**: in a request-scoped DI container, instantiate one key per request and dispose it at the end of the request.
+- **Pool of keys**: keep a small pool of reusable instances and check one out per call.
+
+Unsafe (will give corrupted output, surface BCL exceptions, or in the worst case crash the native handle):
+
+- Sharing one `MLDsaPrivateKey` across two threads that both call `SignData` simultaneously.
+- Sharing one `XWingPrivateKey` across two threads that both call `Decapsulate` simultaneously.
+
+Static facades (`MLKem768.GenerateKeyPair()`, `MLDsa87.ImportPrivateSeed(...)`, etc.) are safe to call from any thread; each call returns a fresh instance.
+
 ## Known limitations
 
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, up-to-date list. Highlights:

@@ -28,6 +28,9 @@ coverage*.json
 _*.txt
 _*.log
 
+# BenchmarkDotNet outputs
+BenchmarkDotNet.Artifacts/
+
 # Claude Code session / scheduler state
 .claude/
 

@@ -39,7 +39,7 @@ public class MLDsaBenchmarks
     public byte[] SignData_Allocating() => _signer.SignData(_message);
 
     [Benchmark]
-    public void SignData_SpanOverload() => _signer.SignData(_message, _sigBuffer);
+    public void SignData_SpanOverload() => _signer.SignData(_message, _sigBuffer.AsSpan());
 
     [Benchmark]
     public bool Verify() => _verifier.Verify(_message, _signature);
