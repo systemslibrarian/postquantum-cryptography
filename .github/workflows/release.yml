@@ -1,11 +1,15 @@
 name: Release
 
-# Publishes the NuGet package + symbols when a `v*` tag is pushed.
+# Publishes the NuGet package + symbols + SBOM when a `v*` tag is pushed.
+#
+# Stable (non-preview) tags REQUIRE package signing. Preview/alpha/beta/rc tags
+# may skip signing if no certificate secret is configured, so early development
+# isn't blocked on having a code-signing cert in place.
 #
 # Required repository secrets:
 #   NUGET_API_KEY        — push token for nuget.org (Account → API Keys)
 #
-# Optional repository secrets (only used if defined):
+# Required for stable releases (optional for preview):
 #   CODESIGN_PFX_BASE64    — base64-encoded code-signing PFX
 #   CODESIGN_PFX_PASSWORD  — PFX password
 
@@ -42,6 +46,22 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Determine release flavour
+        id: flavour
+        # Stable = tag has no pre-release segment (no '-' after the version).
+        # Examples: v1.0.0 → stable; v1.0.0-preview.1, v1.0.0-rc.2 → prerelease.
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [[ "$tag" == *-* ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "Release flavour: prerelease ($tag)"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "Release flavour: stable ($tag)"
+          fi
+
       - name: Restore
         run: dotnet restore PostQuantum.Cryptography.slnx
 
@@ -54,15 +74,37 @@ jobs:
       - name: Pack
         run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c ${{ env.CONFIGURATION }} --no-build -o ./artifacts/packages
 
-      - name: Sign packages (optional)
+      - name: Smoke-test the packaged artifact
+        # Tag is `vX.Y.Z`; strip the leading 'v' to get the package version.
+        run: |
+          set -euo pipefail
+          tag="${{ steps.flavour.outputs.tag }}"
+          version="${tag#v}"
+          bash ./tests/PostQuantum.Cryptography.SmokeTest/run-smoke-test.sh "$version" "${{ env.CONFIGURATION }}"
+
+      - name: Generate SBOM (CycloneDX) — release asset
+        run: |
+          dotnet tool install --global CycloneDX || true
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          mkdir -p ./artifacts/sbom
+          dotnet CycloneDX src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -o ./artifacts/sbom
+          # Rename the SBOM to include the tag so it's unambiguous on the release page.
+          mv ./artifacts/sbom/bom.xml "./artifacts/sbom/PostQuantum.Cryptography.${{ steps.flavour.outputs.tag }}.cyclonedx.xml"
+
+      - name: Sign packages (required for stable, optional for prerelease)
         env:
           CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
           CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
         run: |
           set -euo pipefail
           if [ -z "${CODESIGN_PFX_BASE64:-}" ]; then
-            echo "No CODESIGN_PFX_BASE64 secret configured — skipping package signing."
-            exit 0
+            if [ "${{ steps.flavour.outputs.is_prerelease }}" = "true" ]; then
+              echo "::warning::No CODESIGN_PFX_BASE64 secret configured — skipping package signing (prerelease)."
+              exit 0
+            else
+              echo "::error::Stable releases require package signing. Configure CODESIGN_PFX_BASE64 and CODESIGN_PFX_PASSWORD."
+              exit 1
+            fi
           fi
           echo "$CODESIGN_PFX_BASE64" | base64 -d > codesign.pfx
           for pkg in ./artifacts/packages/*.nupkg; do
@@ -70,6 +112,10 @@ jobs:
               --certificate-path codesign.pfx \
               --certificate-password "$CODESIGN_PFX_PASSWORD" \
               --timestamper http://timestamp.digicert.com
+          done
+          # Verify signatures landed.
+          for pkg in ./artifacts/packages/*.nupkg; do
+            dotnet nuget verify "$pkg"
           done
           rm -f codesign.pfx
 
@@ -93,11 +139,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-packages
-          path: ./artifacts/packages/*
+          path: |
+            ./artifacts/packages/*
+            ./artifacts/sbom/*
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: ./artifacts/packages/*
+          prerelease: ${{ steps.flavour.outputs.is_prerelease == 'true' }}
+          files: |
+            ./artifacts/packages/*.nupkg
+            ./artifacts/packages/*.snupkg
+            ./artifacts/sbom/*.cyclonedx.xml

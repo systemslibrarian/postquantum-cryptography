@@ -7,6 +7,44 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **Public API frozen.** The `0.1.0-preview.1` surface has been moved from
+  `PublicAPI.Unshipped.txt` to `PublicAPI.Shipped.txt`. Subsequent unintentional
+  API changes now fail the build via `PublicApiAnalyzers`.
+- **IntelliSense examples.** `<example>` XML doc blocks on the primary public
+  entry-points (`MLKem768`, `MLKemPrivateKey`/`PublicKey`, `MLKemKey`, `MLDsa87`,
+  `MLDsaPrivateKey`/`PublicKey`, `XWing`) so users see usage in-IDE.
+- **BenchmarkDotNet project** under `benchmarks/` with `MemoryDiagnoser`
+  covering ML-KEM, ML-DSA, and X-Wing — including allocation checks on the Span
+  overloads.
+- **Coverage-guided fuzzing harness** under `fuzz/` using SharpFuzz, with
+  multiple targets (decap, verify, importer entry points). See `fuzz/README.md`.
+- **Packaged-consumption smoke test** under
+  `tests/PostQuantum.Cryptography.SmokeTest/`. Builds the `.nupkg`, restores it
+  into a clean project via a local NuGet feed, and exercises ML-KEM, ML-DSA,
+  X-Wing, the Span overloads, and PEM label validation against the packaged
+  artifact. Catches packaging mistakes that unit tests miss.
+- **Platform / runtime support matrix** in `README.md`.
+- **Explicit X-Wing wire-format compatibility policy**: if the IETF spec
+  changes the wire format before publication as an RFC, we will rev the
+  package major version and document the migration.
+- **`PackageIcon` wiring** with conditional pack. Drop a 128×128 PNG at
+  `assets/icon.png` and uncomment one line to ship it; no placeholder
+  branding is checked in.
+
+### Changed
+
+- **Release workflow** now requires package signing for non-preview tags
+  (fails closed), generates a CycloneDX SBOM as a release asset, and runs
+  the smoke test against the packed artifact before publishing.
+- **`PackageReleaseNotes`** points to the corresponding section of the
+  online `CHANGELOG.md` for the package's version, so NuGet detail pages
+  link to a real list of changes.
+- **`SECURITY.md`** strengthened with explicit response-time targets, a
+  GitHub Security Advisories pointer (preferred private reporting channel),
+  and a forward-looking supported-versions table.
+
 ## [0.1.0-preview.1] — 2026-05-31
 
 Initial preview.

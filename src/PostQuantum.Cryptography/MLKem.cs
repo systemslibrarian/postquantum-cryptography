@@ -20,6 +20,14 @@ namespace PostQuantum.Cryptography;
 /// sizes are taken from the underlying key, so it works uniformly across the
 /// facades <see cref="MLKem512"/>, <see cref="MLKem768"/>, and <see cref="MLKem1024"/>.
 /// </remarks>
+/// <example>
+/// <code>
+/// using MLKemPublicKey pub = MLKem768.ImportEncapsulationKey(publicKeyBytes);
+/// KemEncapsulation enc = pub.Encapsulate();
+/// // enc.Ciphertext is sent to the holder of the private key;
+/// // enc.SharedSecret is used to key a symmetric algorithm.
+/// </code>
+/// </example>
 public sealed class MLKemPublicKey : IDisposable
 {
     private readonly MLKem _kem;
@@ -107,6 +115,16 @@ public sealed class MLKemPublicKey : IDisposable
 /// This type is algorithm-aware (ML-KEM-512/768/1024); all sizes are taken from
 /// the underlying key.
 /// </remarks>
+/// <example>
+/// <code>
+/// using MLKemPrivateKey priv = MLKem768.GenerateKeyPair();
+/// byte[] seed = priv.ExportPrivateSeed();  // 64 bytes, store securely
+///
+/// // Later: rebuild the same key pair from the seed.
+/// using MLKemPrivateKey restored = MLKem768.ImportPrivateSeed(seed);
+/// byte[] sharedSecret = restored.Decapsulate(ciphertext);
+/// </code>
+/// </example>
 public sealed class MLKemPrivateKey : IDisposable
 {
     private readonly MLKem _kem;
@@ -229,6 +247,19 @@ public sealed class MLKemPrivateKey : IDisposable
 /// Shared import helpers for ML-KEM keys in DER / PEM (PKCS#8, SubjectPublicKeyInfo)
 /// formats. The parameter set is recovered from the encoded structure.
 /// </summary>
+/// <example>
+/// <code>
+/// // Export to PEM for storage / interchange.
+/// using MLKemPrivateKey priv = MLKem768.GenerateKeyPair();
+/// string privatePem = priv.ExportPkcs8PrivateKeyPem();
+/// string publicPem  = priv.GetPublicKey().ExportSubjectPublicKeyInfoPem();
+///
+/// // Re-import. PEM label is validated up front: a public-key PEM passed to
+/// // ImportPrivateKeyFromPem throws ArgumentException immediately.
+/// using MLKemPrivateKey loaded = MLKemKey.ImportPrivateKeyFromPem(privatePem);
+/// using MLKemPublicKey  pub    = MLKemKey.ImportPublicKeyFromPem(publicPem);
+/// </code>
+/// </example>
 public static class MLKemKey
 {
     /// <summary>Imports a private key from a DER-encoded PKCS#8 PrivateKeyInfo structure.</summary>
@@ -316,6 +347,21 @@ public static class MLKem512
 /// throughout the <c>PostQuantum.*</c> ecosystem. For a hybrid (classical +
 /// post-quantum) construction, prefer <see cref="XWing"/>.
 /// </remarks>
+/// <example>
+/// <code>
+/// // Recipient generates a key pair and publishes the encapsulation key.
+/// using MLKemPrivateKey recipient = MLKem768.GenerateKeyPair();
+/// byte[] publicKeyBytes = recipient.ExportEncapsulationKey();
+///
+/// // Sender encapsulates a fresh 32-byte shared secret to the recipient.
+/// using MLKemPublicKey publicKey = MLKem768.ImportEncapsulationKey(publicKeyBytes);
+/// KemEncapsulation result = publicKey.Encapsulate();
+///
+/// // Recipient recovers the same shared secret from the ciphertext.
+/// byte[] recipientSecret = recipient.Decapsulate(result.Ciphertext);
+/// // result.SharedSecret.SequenceEqual(recipientSecret) == true
+/// </code>
+/// </example>
 public static class MLKem768
 {
     /// <summary>Size, in bytes, of an ML-KEM-768 encapsulation (public) key.</summary>

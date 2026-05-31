@@ -26,6 +26,21 @@ SLH-DSA (FIPS 205) is intentionally **not** included yet: the .NET 10 BCL type i
 
 - **.NET 10** or later. The post-quantum primitives use the native BCL APIs (`System.Security.Cryptography.MLKem`, `MLDsa`, `SHA3_256`, `Shake256`) introduced in .NET 10.
 
+### Platform / runtime support matrix
+
+ML-KEM / ML-DSA availability depends on the **crypto provider the .NET runtime was built against** — not on the SDK alone. Always gate calls on `MLKem768.IsSupported` / `MLDsa87.IsSupported` / `XWing.IsSupported` so your app degrades gracefully on hosts that don't expose them.
+
+| OS                              | Provider                | ML-KEM / ML-DSA           | X-Wing                  | X25519 (RFC 7748)         |
+| ------------------------------- | ----------------------- | ------------------------- | ----------------------- | ------------------------- |
+| **Windows 11 / Server 2025+**   | CNG (PQC-enabled build) | Supported                 | Supported               | Supported (managed)       |
+| **Linux**, OpenSSL 3.5+ wired   | OpenSSL                 | Supported                 | Supported               | Supported (managed)       |
+| **Linux**, OpenSSL &lt; 3.5     | OpenSSL                 | `IsSupported == false`    | `IsSupported == false`  | Supported (managed)       |
+| **macOS** (Apple Silicon/Intel) | runtime-dependent       | runtime-dependent         | runtime-dependent       | Supported (managed)       |
+
+"Runtime-dependent" means: even on the right SDK, the host runtime build may or may not enable PQC. Check `MLKem.IsSupported` at startup.
+
+The bundled X25519 implementation is **pure managed code** and runs unconditionally on every supported platform, which is what makes X-Wing decapsulation testable in CI on hosts that don't have OpenSSL 3.5 yet (it just can't do the ML-KEM half there).
+
 ## Installation
 
 ```bash
@@ -92,6 +107,8 @@ byte[] recipientSecret = recipient.Decapsulate(result.Ciphertext);
 ```
 
 X-Wing's shared secret stays secure as long as **either** ML-KEM-768 **or** X25519 is unbroken, which makes it a strong default while the world transitions to post-quantum cryptography.
+
+> ⚠️ **X-Wing wire-format compatibility policy.** X-Wing is an IETF draft (`draft-connolly-cfrg-xwing-kem`), not yet a final RFC. The wire format has been stable across recent revisions, but we make this explicit commitment: **if the spec changes the wire format before the RFC publishes, we will rev the major version of this package and document the migration.** We will not silently change bytes you've already serialized. Until the RFC lands, prefer either (a) ML-KEM-768 + your own ephemeral X25519 if you need strict long-term interoperability guarantees, or (b) pin to a specific `PostQuantum.Cryptography` major version and migrate intentionally.
 
 ### Other parameter sets
 

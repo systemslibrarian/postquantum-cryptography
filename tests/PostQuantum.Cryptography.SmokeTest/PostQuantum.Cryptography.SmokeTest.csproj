@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>PostQuantum.Cryptography.SmokeTest</RootNamespace>
+    <AssemblyName>PostQuantum.Cryptography.SmokeTest</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <!-- Smoke-test deliberately does not turn warnings into errors; its job is
+         to exercise the published package, not the source code. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Override the version per-invocation via -p:SmokeTestPackageVersion=...
+         so this can be pinned to whatever was just packed. -->
+    <SmokeTestPackageVersion Condition="'$(SmokeTestPackageVersion)' == ''">0.1.0-preview.1</SmokeTestPackageVersion>
+  </PropertyGroup>
+
+  <!-- Pull the *NuGet package* (not the source project) so this verifies
+       the actual published artifact, including its packaged DLL, metadata,
+       and SourceLink wiring. -->
+  <ItemGroup>
+    <PackageReference Include="PostQuantum.Cryptography" Version="$(SmokeTestPackageVersion)" />
+  </ItemGroup>
+
+</Project>

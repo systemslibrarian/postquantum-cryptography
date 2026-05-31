@@ -36,14 +36,18 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/systemslibrarian/postquantum-cryptography</PackageProjectUrl>
-    <PackageReleaseNotes>See CHANGELOG.md for release notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/systemslibrarian/postquantum-cryptography/blob/main/CHANGELOG.md#$(Version.Replace('.', '').Replace('-', ''))</PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <!-- PackageIcon: drop a 128x128 PNG at `assets/icon.png` and uncomment.
+         The .nupkg ItemGroup below already conditionally packs it. -->
+    <!-- <PackageIcon>icon.png</PackageIcon> -->
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="\" />
     <None Include="../../LICENSE" Pack="true" PackagePath="\" />
     <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" Condition="Exists('../../THIRD-PARTY-NOTICES.md')" />
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="\" Condition="Exists('../../assets/icon.png')" />
   </ItemGroup>
 
   <ItemGroup>

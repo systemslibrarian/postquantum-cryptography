@@ -22,7 +22,7 @@ If something important is missing from this list, that itself is a gap — pleas
 
 - **Core KEM with the §5.5.1 caching optimization.** `GenerateKeyPair`, `Encapsulate`, `Decapsulate`, and import/export are provided. The "expanded decapsulation key" is cached: the 32-byte seed is expanded once (on generate/import) and reused across every `Decapsulate`. The packed (transmittable) form is the seed; the expanded form is never exported, per the spec's binding requirements.
 - **Derandomized encapsulation is not public.** `EncapsulateDerand` is a testing aid in the spec and is not part of the API. The bundled known-answer tests therefore cover **key generation** (seed → encapsulation key) and **decapsulation** (seed + ciphertext → shared secret) against the specification vectors, but not derandomized encapsulation.
-- **Draft, not final.** X-Wing is an IETF draft. The wire format is stable across recent revisions, but until it is published as an RFC, treat interoperability with other implementations as "verify before you rely."
+- **Draft, not final.** X-Wing is an IETF draft. The wire format is stable across recent revisions, but until it is published as an RFC, treat interoperability with other implementations as "verify before you rely." If the spec changes the wire format before publication as an RFC, this library will rev the **major version** and document the migration; we will not silently change bytes you've already serialized (see the wire-format policy in `README.md`).
 
 ## Cryptographic caveats
 

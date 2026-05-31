@@ -23,6 +23,20 @@ namespace PostQuantum.Cryptography;
 /// uses a constant-time implementation bundled with this library (see
 /// <see cref="X25519"/>), because the BCL does not expose X25519.
 /// </remarks>
+/// <example>
+/// <code>
+/// // Recipient generates a key pair and publishes the 1216-byte encapsulation key.
+/// using XWingPrivateKey recipient = XWing.GenerateKeyPair();
+/// byte[] publicKeyBytes = recipient.ExportEncapsulationKey();
+///
+/// // Sender encapsulates.
+/// XWingPublicKey publicKey = XWing.ImportEncapsulationKey(publicKeyBytes);
+/// KemEncapsulation result = publicKey.Encapsulate();
+///
+/// // Recipient decapsulates and recovers the same 32-byte shared secret.
+/// byte[] recipientSecret = recipient.Decapsulate(result.Ciphertext);
+/// </code>
+/// </example>
 public static class XWing
 {
     /// <summary>Size, in bytes, of an X-Wing decapsulation (private) key, which is a 32-byte seed.</summary>

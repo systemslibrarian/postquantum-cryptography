@@ -29,17 +29,46 @@ See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, up-to-date list. Hig
 
 ## Reporting a vulnerability
 
-If you believe you have found a security issue:
+If you believe you have found a security issue, please report it **privately**. Two channels are available; either is fine:
 
-- **Do not** open a public GitHub issue.
-- Email the maintainer at **systemslibrarian@gmail.com** with details and, if possible, a reproduction.
-- You will receive an acknowledgement, and we will work with you on a coordinated disclosure timeline.
+1. **GitHub Security Advisories (preferred).** Open a private advisory at
+   <https://github.com/systemslibrarian/postquantum-cryptography/security/advisories/new>.
+   This keeps the report invisible to the public and lets us collaborate on the fix
+   in a private fork.
+2. **Email.** Send to **systemslibrarian@gmail.com** with the subject line
+   `PostQuantum.Cryptography security` and as much detail / reproduction as you can.
 
-Please include "PostQuantum.Cryptography security" in the subject line.
+### Response targets
+
+These are targets, not contractual SLAs — but we take them seriously:
+
+| Phase                    | Target time                |
+| ------------------------ | -------------------------- |
+| Acknowledgement          | within 3 business days     |
+| Initial triage + severity | within 7 business days    |
+| Fix landed or mitigation | within 30 days for High/Critical, 90 days for Medium/Low |
+| Coordinated disclosure   | by mutual agreement, default 90 days from triage          |
+
+If you don't hear back within the acknowledgement window, please follow up — email
+filters are imperfect.
+
+### What we ask of reporters
+
+- Don't exploit the issue beyond what's needed to demonstrate it.
+- Don't share it publicly until we've agreed on a coordinated disclosure date.
+- Give us a reasonable window to fix before publishing details.
+
+We're happy to credit you in the advisory and release notes — let us know how you'd like to be named.
 
 ## Supported versions
 
-While in `0.x` preview, only the latest released version receives security fixes.
+| Version line     | Status   | Receives security fixes? |
+| ---------------- | -------- | ------------------------ |
+| `0.x` (preview)  | Active   | Latest release only      |
+| `1.x` and later  | _t.b.d._ | The two most recent minor releases of the current major |
+
+When `1.0` ships, this table will be updated with a concrete policy. While we are
+in `0.x` preview, only the most recent release receives backported fixes.
 
 ---
 

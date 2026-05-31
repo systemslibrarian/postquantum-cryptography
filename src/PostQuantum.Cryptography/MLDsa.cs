@@ -18,6 +18,12 @@ namespace PostQuantum.Cryptography;
 /// <remarks>
 /// Algorithm-aware across ML-DSA-44/65/87; sizes come from the underlying key.
 /// </remarks>
+/// <example>
+/// <code>
+/// using MLDsaPublicKey verifier = MLDsaKey.ImportPublicKeyFromPem(publicPem);
+/// bool ok = verifier.Verify(message, signature);
+/// </code>
+/// </example>
 public sealed class MLDsaPublicKey : IDisposable
 {
     private readonly MLDsa _dsa;
@@ -86,6 +92,18 @@ public sealed class MLDsaPublicKey : IDisposable
 /// and verification (FIPS 204 §5.2) binds a signature to a usage domain; both
 /// sides must agree on it.
 /// </remarks>
+/// <example>
+/// <code>
+/// using MLDsaPrivateKey signer = MLDsa87.GenerateKeyPair();
+///
+/// // Allocating overload.
+/// byte[] sig = signer.SignData(message);
+///
+/// // Zero-allocation overload — writes into caller-provided buffer.
+/// Span&lt;byte&gt; dest = stackalloc byte[MLDsa87.SignatureSizeInBytes];
+/// signer.SignData(message, dest);
+/// </code>
+/// </example>
 public sealed class MLDsaPrivateKey : IDisposable
 {
     private readonly MLDsa _dsa;
@@ -329,6 +347,22 @@ public static class MLDsa65
 /// ML-DSA-87 is the highest-strength parameter set and the conservative default
 /// for long-lived signatures throughout the <c>PostQuantum.*</c> ecosystem.
 /// </remarks>
+/// <example>
+/// <code>
+/// using MLDsaPrivateKey signer  = MLDsa87.GenerateKeyPair();
+/// using MLDsaPublicKey verifier = signer.GetPublicKey();
+///
+/// byte[] message   = "To God be the glory."u8.ToArray();
+/// byte[] signature = signer.SignData(message);
+///
+/// bool ok = verifier.Verify(message, signature); // true
+///
+/// // Context-bound signatures (FIPS 204 §5.2): both sides must agree.
+/// byte[] context = "invoice-signing-v1"u8.ToArray();
+/// byte[] boundSig = signer.SignData(message, context);
+/// bool boundOk = verifier.Verify(message, boundSig, context);
+/// </code>
+/// </example>
 public static class MLDsa87
 {
     /// <summary>Size, in bytes, of an ML-DSA-87 public key.</summary>
