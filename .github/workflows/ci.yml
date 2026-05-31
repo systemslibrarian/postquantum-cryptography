@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  CONFIGURATION: Release
+
+jobs:
+  build-test-pack:
+    name: Build, test & pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Report runtime PQC support
+        # Visibility: shows whether this runner's runtime exposes ML-KEM/ML-DSA.
+        # The test suite skips (does not fail) the PQC tests when unsupported.
+        run: |
+          dotnet --info
+          openssl version || true
+
+      - name: Restore
+        run: dotnet restore PostQuantum.Cryptography.slnx
+
+      - name: Build (deterministic / CI)
+        run: dotnet build PostQuantum.Cryptography.slnx -c $CONFIGURATION --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Test
+        run: dotnet test PostQuantum.Cryptography.slnx -c $CONFIGURATION --no-build --logger "trx;LogFileName=test-results.trx" --results-directory ./artifacts/test-results
+
+      - name: Pack
+        run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION --no-build -o ./artifacts/packages
+
+      - name: Generate SBOM (CycloneDX)
+        continue-on-error: true
+        run: |
+          dotnet tool install --global CycloneDX || true
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet CycloneDX src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -o ./artifacts/sbom || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-and-reports
+          path: |
+            ./artifacts/packages/*.nupkg
+            ./artifacts/packages/*.snupkg
+            ./artifacts/test-results/*.trx
+            ./artifacts/sbom/**
+          if-no-files-found: warn
+
+  determinism:
+    name: Deterministic build check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build twice and compare assembly hashes
+        run: |
+          set -euo pipefail
+          dotnet build src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION -p:ContinuousIntegrationBuild=true -o ./out1
+          dotnet build src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION -p:ContinuousIntegrationBuild=true -o ./out2
+          h1=$(sha256sum ./out1/PostQuantum.Cryptography.dll | cut -d' ' -f1)
+          h2=$(sha256sum ./out2/PostQuantum.Cryptography.dll | cut -d' ' -f1)
+          echo "build 1: $h1"
+          echo "build 2: $h2"
+          if [ "$h1" != "$h2" ]; then
+            echo "::error::Build is not deterministic — assembly hashes differ."
+            exit 1
+          fi
+          echo "Deterministic build verified."
+
+  sign:
+    name: Sign packages (release only)
+    needs: build-test-pack
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack
+        run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION -o ./artifacts/packages
+
+      - name: Sign (only if a code-signing certificate secret is configured)
+        env:
+          CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
+          CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
+        run: |
+          if [ -z "${CODESIGN_PFX_BASE64:-}" ]; then
+            echo "No CODESIGN_PFX_BASE64 secret configured — skipping package signing."
+            exit 0
+          fi
+          echo "$CODESIGN_PFX_BASE64" | base64 -d > codesign.pfx
+          for pkg in ./artifacts/packages/*.nupkg; do
+            dotnet nuget sign "$pkg" \
+              --certificate-path codesign.pfx \
+              --certificate-password "$CODESIGN_PFX_PASSWORD" \
+              --timestamper http://timestamp.digicert.com
+          done
+          rm -f codesign.pfx

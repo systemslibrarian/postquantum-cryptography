@@ -1,0 +1,36 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.nupkg
+*.snupkg
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.xml
+coverage*.json
+*.coverage
+
+# IDE / editor
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+
+# Local tooling / scratch
+.dotnet/
+*.received.*
+_*.txt
+_*.log
+
+# Claude Code session / scheduler state
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

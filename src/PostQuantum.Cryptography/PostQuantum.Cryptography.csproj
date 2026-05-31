@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>PostQuantum.Cryptography</RootNamespace>
+    <AssemblyName>PostQuantum.Cryptography</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>PostQuantum.Cryptography</PackageId>
+    <Version>0.1.0-preview.1</Version>
+    <Title>PostQuantum.Cryptography</Title>
+    <Description>Clean, high-level, secure-by-default post-quantum cryptography primitives for .NET 10. Provides easy-to-use wrappers over the native BCL implementations of ML-KEM-768 (FIPS 203) and ML-DSA-87 (FIPS 204), plus a spec-compliant X-Wing hybrid KEM (ML-KEM-768 + X25519). The foundation library for the PostQuantum.* ecosystem.</Description>
+    <PackageTags>post-quantum;pqc;cryptography;ml-kem;mlkem;kyber;ml-dsa;mldsa;dilithium;x-wing;xwing;hybrid;kem;fips-203;fips-204;security;net10</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/systemslibrarian/postquantum-cryptography</PackageProjectUrl>
+    <PackageReleaseNotes>0.1.0-preview.1: Initial preview. ML-KEM-768, ML-DSA-87, and X-Wing hybrid KEM high-level APIs.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PostQuantum.Cryptography.Tests" />
+  </ItemGroup>
+
+</Project>
