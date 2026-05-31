@@ -7,6 +7,31 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.0-preview.3] — 2026-05-31
+
+### Added
+
+- **Byte-oriented one-shot convenience layer** alongside the typed API —
+  `MlKemOperations`, `MLDsaOperations`, `XWingHybridKem`, and a small
+  `PqKeyPair<TPublic, TPrivate>` bundle struct. These complement the typed
+  `MLKem768` / `MLDsa87` / `XWing` surface for fire-and-forget use cases
+  where a key only needs to live for a single operation. Bit-identical
+  results to the typed API for the same inputs (proven by
+  `ConvenienceFacadeTests`).
+- **Completely rewritten `README.md`** to a professional foundation-library
+  standard: motivation, differentiation from raw BCL / BouncyCastle, two-API
+  decision guide, quick-start per primitive, performance table, platform
+  matrix, and an explicit "About this library" section with the
+  human + AI transparency paragraph.
+
+### Changed
+
+- **NuGet metadata polished** — sharper Title and Description aimed at
+  discoverability, expanded tag set, version bumped to `0.1.0-preview.3`
+  to ship the new convenience layer.
+
+## [0.1.0-preview.2] — 2026-05-31
+
 ### Added
 
 - **Thread-safety contract documented** in `SECURITY.md` and on every public

@@ -9,7 +9,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$Version = "0.1.0-preview.2",
+    [string]$Version = "0.1.0-preview.3",
     [string]$Configuration = "Release"
 )
 
