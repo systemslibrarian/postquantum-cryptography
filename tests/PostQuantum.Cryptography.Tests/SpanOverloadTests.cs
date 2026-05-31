@@ -29,7 +29,7 @@ public class SpanOverloadTests
     public void XWing_Encapsulate_Decapsulate_SpanOverloads_RoundTrip()
     {
         using XWingPrivateKey priv = XWing.GenerateKeyPair();
-        XWingPublicKey pub = priv.GetPublicKey();
+        using XWingPublicKey pub = priv.GetPublicKey();
 
         Span<byte> ct = stackalloc byte[XWing.CiphertextSizeInBytes];
         Span<byte> ssSender = stackalloc byte[XWing.SharedSecretSizeInBytes];

@@ -65,7 +65,7 @@ Asm("ML-DSA-87 sign/verify via packaged API", () =>
 Asm("X-Wing round-trip via packaged API", () =>
 {
     using XWingPrivateKey priv = XWing.GenerateKeyPair();
-    XWingPublicKey pub = priv.GetPublicKey();
+    using XWingPublicKey pub = priv.GetPublicKey();
     KemEncapsulation enc = pub.Encapsulate();
     byte[] recovered = priv.Decapsulate(enc.Ciphertext);
     if (!enc.SharedSecret.AsSpan().SequenceEqual(recovered))

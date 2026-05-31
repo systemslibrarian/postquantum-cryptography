@@ -99,7 +99,7 @@ using PostQuantum.Cryptography;
 using XWingPrivateKey recipient = XWing.GenerateKeyPair();
 byte[] publicKeyBytes = recipient.ExportEncapsulationKey(); // 1216 bytes
 
-XWingPublicKey publicKey = XWing.ImportEncapsulationKey(publicKeyBytes);
+using XWingPublicKey publicKey = XWing.ImportEncapsulationKey(publicKeyBytes);
 KemEncapsulation result = publicKey.Encapsulate();
 
 byte[] recipientSecret = recipient.Decapsulate(result.Ciphertext);
@@ -170,13 +170,26 @@ The same pattern works for `XWingPublicKey.Encapsulate`, `XWingPrivateKey.Decaps
 
 This library has **not** undergone an independent security audit. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
 
+## Learning the library
+
+- **[`samples/`](samples/)** — five runnable mini-apps (hybrid handshake,
+  signed files, encrypt-to-public-key, zero-alloc hot loop, detached
+  signature CLI). Best place to start once the basic usage above makes
+  sense.
+- **[`docs/RECIPES.md`](docs/RECIPES.md)** — pattern cookbook. "How do I
+  do X?" answers with code, cross-linked to the corresponding sample.
+
 ## Project layout
 
 ```
-src/    PostQuantum.Cryptography      — the library
-tests/  PostQuantum.Cryptography.Tests — round-trip, KAT, and property tests
-tools/  ComputeFingerprints           — utility for regenerating deterministic KAT fingerprints
-docs/   additional documentation
+src/        PostQuantum.Cryptography              — the library
+tests/      PostQuantum.Cryptography.Tests        — unit, KAT, and property tests
+tests/      PostQuantum.Cryptography.SmokeTest    — consumes the packed .nupkg
+samples/    01-05                                  — runnable demos
+benchmarks/ PostQuantum.Cryptography.Benchmarks   — BenchmarkDotNet hot-path metrics
+fuzz/       PostQuantum.Cryptography.Fuzz         — SharpFuzz coverage-guided fuzzer
+tools/      ComputeFingerprints                    — regenerate deterministic KAT fingerprints
+docs/       RECIPES.md + other documentation
 ```
 
 ## Building and testing

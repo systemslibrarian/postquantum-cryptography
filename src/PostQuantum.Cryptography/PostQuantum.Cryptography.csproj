@@ -22,14 +22,14 @@
   <PropertyGroup>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-preview.1</InformationalVersion>
+    <InformationalVersion>0.1.0-preview.2</InformationalVersion>
   </PropertyGroup>
 
   <!-- NuGet package metadata -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>PostQuantum.Cryptography</PackageId>
-    <Version>0.1.0-preview.1</Version>
+    <Version>0.1.0-preview.2</Version>
     <Title>PostQuantum.Cryptography</Title>
     <Description>Clean, high-level, secure-by-default post-quantum cryptography primitives for .NET 10. Provides easy-to-use wrappers over the native BCL implementations of ML-KEM (FIPS 203, all parameter sets) and ML-DSA (FIPS 204, all parameter sets), plus a spec-compliant X-Wing hybrid KEM (ML-KEM-768 + X25519). The foundation library for the PostQuantum.* ecosystem.</Description>
     <PackageTags>post-quantum;pqc;cryptography;ml-kem;mlkem;kyber;ml-dsa;mldsa;dilithium;x-wing;xwing;hybrid;kem;fips-203;fips-204;security;net10;aot</PackageTags>

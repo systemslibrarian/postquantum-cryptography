@@ -1,0 +1,21 @@
+<Project>
+  <!-- Inherit repo-root settings (TargetFramework, nullability, deterministic
+       builds, SourceLink, etc.) and then relax the strict analyzer profile so
+       samples read like ordinary application code, not a fortified library. -->
+  <Import Project="../Directory.Build.props" />
+
+  <PropertyGroup>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+    <AnalysisMode>none</AnalysisMode>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <NoWarn>$(NoWarn);CA1014;CA1707;CA1303;CA1305;CA1812;CA1822;CA2007</NoWarn>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Every sample references the production library directly so changes in
+       the library are picked up instantly when working through the samples. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj" />
+  </ItemGroup>
+</Project>

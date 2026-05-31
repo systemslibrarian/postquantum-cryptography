@@ -1,1 +1,3 @@
-﻿#nullable enable
+#nullable enable
+PostQuantum.Cryptography.XWingPublicKey.Dispose() -> void
+override PostQuantum.Cryptography.KemEncapsulation.ToString() -> string!

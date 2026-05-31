@@ -29,8 +29,9 @@ namespace PostQuantum.Cryptography;
 /// using XWingPrivateKey recipient = XWing.GenerateKeyPair();
 /// byte[] publicKeyBytes = recipient.ExportEncapsulationKey();
 ///
-/// // Sender encapsulates.
-/// XWingPublicKey publicKey = XWing.ImportEncapsulationKey(publicKeyBytes);
+/// // Sender encapsulates. XWingPublicKey caches an expanded ML-KEM handle
+/// // internally, so dispose it when finished (especially if reused across calls).
+/// using XWingPublicKey publicKey = XWing.ImportEncapsulationKey(publicKeyBytes);
 /// KemEncapsulation result = publicKey.Encapsulate();
 ///
 /// // Recipient decapsulates and recovers the same 32-byte shared secret.
@@ -144,17 +145,25 @@ public static class XWing
 }
 
 /// <summary>
-/// An X-Wing public key (encapsulation key). Holds only public material.
+/// An X-Wing public key (encapsulation key). Holds only public material, but
+/// internally caches an expanded ML-KEM-768 handle so repeated
+/// <see cref="Encapsulate()"/> calls don't re-import the encapsulation key
+/// each time — mirroring the §5.5.1 caching pattern that
+/// <see cref="XWingPrivateKey"/> uses for the decapsulation side. Dispose
+/// when finished to release the underlying native handle.
 /// </summary>
-public sealed class XWingPublicKey
+public sealed class XWingPublicKey : IDisposable
 {
     private readonly byte[] _pkM; // ML-KEM-768 encapsulation key (1184 bytes)
     private readonly byte[] _pkX; // X25519 public key (32 bytes)
+    private readonly MLKem _mlkem; // imported once, reused across Encapsulate calls
+    private bool _disposed;
 
     internal XWingPublicKey(byte[] pkM, byte[] pkX)
     {
         _pkM = pkM;
         _pkX = pkX;
+        _mlkem = MLKem.ImportEncapsulationKey(MLKemAlgorithm.MLKem768, pkM);
     }
 
     /// <summary>
@@ -190,13 +199,13 @@ public sealed class XWingPublicKey
 
     private void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
     {
-        using MLKem mlkem = MLKem.ImportEncapsulationKey(MLKemAlgorithm.MLKem768, _pkM);
+        ObjectDisposedException.ThrowIf(_disposed, this);
         byte[]? ekX = null;
         byte[]? ssX = null;
         try
         {
             Span<byte> ssM = stackalloc byte[MLKem768.SharedSecretSizeInBytes];
-            mlkem.Encapsulate(ciphertext[..XWing.MLKemCiphertextSize], ssM);
+            _mlkem.Encapsulate(ciphertext[..XWing.MLKemCiphertextSize], ssM);
             ekX = RandomNumberGenerator.GetBytes(XWing.X25519Size);
             byte[] ctX = X25519.ScalarMultBase(ekX);
             ssX = X25519.ScalarMult(ekX, _pkX);
@@ -218,10 +227,23 @@ public sealed class XWingPublicKey
     /// </summary>
     public byte[] Export()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         byte[] encoded = new byte[XWing.EncapsulationKeySizeInBytes];
         _pkM.CopyTo(encoded, 0);
         _pkX.CopyTo(encoded, XWing.MLKemEncapsulationKeySize);
         return encoded;
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _mlkem.Dispose();
+        _disposed = true;
     }
 }
 
@@ -289,6 +311,13 @@ public sealed class XWingPrivateKey : IDisposable
     /// <summary>
     /// Returns the public (encapsulation) key corresponding to this private key.
     /// </summary>
+    /// <remarks>
+    /// The returned <see cref="XWingPublicKey"/> owns its own ML-KEM handle
+    /// (so subsequent <see cref="XWingPublicKey.Encapsulate()"/> calls reuse
+    /// the expansion instead of re-importing each time). Dispose it when
+    /// finished; wrap in a <see langword="using"/> block to avoid leaking
+    /// the handle.
+    /// </remarks>
     public XWingPublicKey GetPublicKey()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

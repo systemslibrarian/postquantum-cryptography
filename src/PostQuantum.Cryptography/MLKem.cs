@@ -135,7 +135,15 @@ public sealed class MLKemPrivateKey : IDisposable
     /// <summary>The ML-KEM parameter set this key belongs to.</summary>
     public MLKemAlgorithm Algorithm => _kem.Algorithm;
 
-    /// <summary>Returns the public (encapsulation) key corresponding to this private key.</summary>
+    /// <summary>
+    /// Returns the public (encapsulation) key corresponding to this private key.
+    /// </summary>
+    /// <remarks>
+    /// The returned <see cref="MLKemPublicKey"/> owns its own native handle
+    /// (it's a fresh import of the encapsulation key, not a shared view),
+    /// so <see cref="IDisposable.Dispose"/> it when finished. Wrap it in a
+    /// <see langword="using"/> block to avoid leaking the handle.
+    /// </remarks>
     public MLKemPublicKey GetPublicKey()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

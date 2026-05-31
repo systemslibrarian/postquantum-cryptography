@@ -15,7 +15,7 @@ public class XWingTests
     public void RoundTrip_ProducesMatchingSharedSecret()
     {
         using XWingPrivateKey privateKey = XWing.GenerateKeyPair();
-        XWingPublicKey publicKey = privateKey.GetPublicKey();
+        using XWingPublicKey publicKey = privateKey.GetPublicKey();
 
         KemEncapsulation encapsulation = publicKey.Encapsulate();
         byte[] recovered = privateKey.Decapsulate(encapsulation.Ciphertext);
@@ -31,7 +31,7 @@ public class XWingTests
         // Exercises the §5.5.1 cached expanded-decapsulation-key optimization:
         // the seed is expanded once and reused across many decapsulations.
         using XWingPrivateKey recipient = XWing.GenerateKeyPair();
-        XWingPublicKey publicKey = recipient.GetPublicKey();
+        using XWingPublicKey publicKey = recipient.GetPublicKey();
 
         for (int i = 0; i < 16; i++)
         {
@@ -49,7 +49,7 @@ public class XWingTests
         byte[] bobPublicKeyBytes = bob.ExportEncapsulationKey();
 
         // Alice imports it and encapsulates.
-        XWingPublicKey bobPublicKey = XWing.ImportEncapsulationKey(bobPublicKeyBytes);
+        using XWingPublicKey bobPublicKey = XWing.ImportEncapsulationKey(bobPublicKeyBytes);
         KemEncapsulation encapsulation = bobPublicKey.Encapsulate();
 
         // Bob decapsulates and recovers the same secret.
@@ -65,7 +65,8 @@ public class XWingTests
 
         Assert.Equal(XWing.DecapsulationKeySizeInBytes, privateKey.ExportDecapsulationKey().Length);
         Assert.Equal(XWing.EncapsulationKeySizeInBytes, privateKey.ExportEncapsulationKey().Length);
-        Assert.Equal(XWing.EncapsulationKeySizeInBytes, privateKey.GetPublicKey().Export().Length);
+        using XWingPublicKey pub = privateKey.GetPublicKey();
+        Assert.Equal(XWing.EncapsulationKeySizeInBytes, pub.Export().Length);
     }
 
     [PqcFact]

@@ -7,11 +7,73 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.0-preview.2] — 2026-05-31
+
 ### Added
 
-- **Public API frozen.** The `0.1.0-preview.1` surface has been moved from
-  `PublicAPI.Unshipped.txt` to `PublicAPI.Shipped.txt`. Subsequent unintentional
-  API changes now fail the build via `PublicApiAnalyzers`.
+- **Five runnable samples** under `samples/` covering the canonical patterns:
+  hybrid X-Wing handshake (01), persistent-PEM ML-DSA file signing (02),
+  hybrid file encryption with HKDF + AES-GCM (03), zero-alloc hot-loop
+  measurement (04), and a small `pqcsign` CLI (05). Each is a standalone
+  `dotnet` project referencing the library directly.
+- **`docs/RECIPES.md`** — pattern cookbook with eleven recipes covering
+  algorithm selection, KEM use, signatures with domain binding, key
+  persistence, deterministic derivation, zero-alloc paths, constant-time
+  comparison, and graceful detection of unsupported platforms. Cross-linked
+  to the samples.
+- **Public API frozen.** The `0.1.0-preview.1` surface moved from
+  `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt`. Subsequent
+  unintentional API changes now fail the build via `PublicApiAnalyzers`.
+- **IntelliSense examples.** `<example>` XML doc blocks on the primary public
+  entry-points (`MLKem768`, `MLKemPrivateKey`/`PublicKey`, `MLKemKey`,
+  `MLDsa87`, `MLDsaPrivateKey`/`PublicKey`, `XWing`).
+- **BenchmarkDotNet project** under `benchmarks/` with `MemoryDiagnoser`
+  covering ML-KEM, ML-DSA, and X-Wing — including allocation checks on the
+  Span overloads.
+- **Coverage-guided fuzzing harness** under `fuzz/` using SharpFuzz, with
+  multiple targets (decap, verify, importer entry points).
+- **Packaged-consumption smoke test** under
+  `tests/PostQuantum.Cryptography.SmokeTest/` that builds the `.nupkg` and
+  exercises it from a clean project via a local NuGet feed.
+- **Platform / runtime support matrix** in `README.md`.
+- **Explicit X-Wing wire-format compatibility policy**: if the IETF spec
+  changes the wire format before publication as an RFC, we will rev the
+  package major version and document the migration.
+- **`PackageIcon` wiring** with conditional pack — drop a 128×128 PNG at
+  `assets/icon.png` and uncomment one line to ship it.
+
+### Changed
+
+- **`XWingPublicKey` now implements `IDisposable`** and caches the imported
+  ML-KEM-768 handle internally, mirroring the §5.5.1 caching pattern the
+  decapsulation side already uses. Repeated `Encapsulate()` calls against
+  the same public key are noticeably cheaper. Wrap returned keys in
+  `using`.
+- **`KemEncapsulation.ToString()`** now returns only the type name — never
+  the underlying bytes — so secrets cannot accidentally leak into logs or
+  exception messages.
+- **`KemEncapsulation` documentation** now spells out the equality semantics
+  (reference-based on inner arrays — by design, to make non–constant-time
+  comparison harder to take by accident) and the `default(KemEncapsulation)`
+  null-array footgun.
+- **`GetPublicKey()` doc** on every private-key type now states that the
+  returned public-key object owns its own native handle and must be
+  disposed.
+- **Release workflow** requires package signing for non-preview tags (fails
+  closed), generates a CycloneDX SBOM as a release asset, and runs the
+  smoke test against the packed artifact before publishing.
+- **`PackageReleaseNotes`** points to the corresponding section of the
+  online `CHANGELOG.md`.
+- **`SECURITY.md`** strengthened with explicit response-time targets, a
+  GitHub Security Advisories pointer, and a forward-looking
+  supported-versions table.
+
+### Fixed
+
+- **ML-DSA context length** is now validated against the FIPS 204 §5.2
+  255-byte limit on every signing/verifying path. Oversized contexts surface
+  as a clear `ArgumentException` with a precise message instead of an opaque
+  `CryptographicException` bubbling up from the BCL.
 - **IntelliSense examples.** `<example>` XML doc blocks on the primary public
   entry-points (`MLKem768`, `MLKemPrivateKey`/`PublicKey`, `MLKemKey`, `MLDsa87`,
   `MLDsaPrivateKey`/`PublicKey`, `XWing`) so users see usage in-IDE.

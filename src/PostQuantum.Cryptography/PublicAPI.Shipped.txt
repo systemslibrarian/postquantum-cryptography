@@ -1,6 +1,5 @@
 #nullable enable
 ~override PostQuantum.Cryptography.KemEncapsulation.Equals(object obj) -> bool
-~override PostQuantum.Cryptography.KemEncapsulation.ToString() -> string
 const PostQuantum.Cryptography.MLDsa44.PrivateSeedSizeInBytes = 32 -> int
 const PostQuantum.Cryptography.MLDsa44.PublicKeySizeInBytes = 1312 -> int
 const PostQuantum.Cryptography.MLDsa44.SecretKeySizeInBytes = 2560 -> int

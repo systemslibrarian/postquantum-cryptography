@@ -13,6 +13,30 @@ using PostQuantum.Cryptography.Internal;
 namespace PostQuantum.Cryptography;
 
 /// <summary>
+/// Constants and shared validation for ML-DSA signing/verification.
+/// </summary>
+internal static class MLDsaLimits
+{
+    /// <summary>
+    /// Maximum length, in bytes, of the optional context bound into an ML-DSA
+    /// signature per FIPS 204 §5.2. Validated up-front in the wrapper so that
+    /// callers get a clear <see cref="ArgumentException"/> instead of an
+    /// opaque exception from deep inside the BCL.
+    /// </summary>
+    public const int MaxContextSizeInBytes = 255;
+
+    public static void EnsureContextLength(ReadOnlySpan<byte> context, string paramName)
+    {
+        if (context.Length > MaxContextSizeInBytes)
+        {
+            throw new ArgumentException(
+                $"ML-DSA context must be at most {MaxContextSizeInBytes} bytes (FIPS 204 §5.2); was {context.Length}.",
+                paramName);
+        }
+    }
+}
+
+/// <summary>
 /// An ML-DSA public key, used to verify signatures. Holds no secret material.
 /// </summary>
 /// <remarks>
@@ -46,6 +70,7 @@ public sealed class MLDsaPublicKey : IDisposable
     public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        MLDsaLimits.EnsureContextLength(context, nameof(context));
         return _dsa.VerifyData(data, signature, context);
     }
 
@@ -114,7 +139,15 @@ public sealed class MLDsaPrivateKey : IDisposable
     /// <summary>The ML-DSA parameter set this key belongs to.</summary>
     public MLDsaAlgorithm Algorithm => _dsa.Algorithm;
 
-    /// <summary>Returns the public (verifying) key corresponding to this private key.</summary>
+    /// <summary>
+    /// Returns the public (verifying) key corresponding to this private key.
+    /// </summary>
+    /// <remarks>
+    /// The returned <see cref="MLDsaPublicKey"/> owns its own native handle
+    /// (it's a fresh import of the public key, not a shared view), so
+    /// <see cref="IDisposable.Dispose"/> it when finished. Wrap it in a
+    /// <see langword="using"/> block to avoid leaking the handle.
+    /// </remarks>
     public MLDsaPublicKey GetPublicKey()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -133,6 +166,7 @@ public sealed class MLDsaPrivateKey : IDisposable
     public byte[] SignData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        MLDsaLimits.EnsureContextLength(context, nameof(context));
         byte[] signature = new byte[_dsa.Algorithm.SignatureSizeInBytes];
         _dsa.SignData(data, signature, context);
         return signature;
@@ -156,6 +190,7 @@ public sealed class MLDsaPrivateKey : IDisposable
     public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        MLDsaLimits.EnsureContextLength(context, nameof(context));
         int expected = _dsa.Algorithm.SignatureSizeInBytes;
         if (destination.Length != expected)
         {

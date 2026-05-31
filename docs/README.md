@@ -2,11 +2,18 @@
 
 Additional documentation for `PostQuantum.Cryptography` lives here.
 
-For now, start with the top-level documents:
+Start here:
+
+- [`RECIPES.md`](RECIPES.md) — pattern cookbook: "how do I do X?" answers with code snippets, cross-linked to runnable samples.
+- [`../samples/`](../samples/) — five focused, runnable mini-apps covering hybrid KEM, signing, file encryption, zero-alloc loops, and a small CLI.
+
+Reference:
 
 - [`../README.md`](../README.md) — overview, usage examples, and security posture.
-- [`../SECURITY.md`](../SECURITY.md) — assurance level and vulnerability reporting.
+- [`../SECURITY.md`](../SECURITY.md) — assurance level, response-time targets, and vulnerability reporting.
 - [`../KNOWN-GAPS.md`](../KNOWN-GAPS.md) — honest inventory of current limitations.
+- [`../CHANGELOG.md`](../CHANGELOG.md) — release notes.
+- [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — how to contribute.
 - [`../CLAUDE.md`](../CLAUDE.md) — project conventions and engineering principles.
 
 ## References

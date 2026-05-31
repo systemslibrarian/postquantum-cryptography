@@ -2,7 +2,7 @@
 # Bash equivalent of run-smoke-test.ps1 for Linux/macOS CI runners.
 set -euo pipefail
 
-VERSION="${1:-0.1.0-preview.1}"
+VERSION="${1:-0.1.0-preview.2}"
 CONFIGURATION="${2:-Release}"
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"

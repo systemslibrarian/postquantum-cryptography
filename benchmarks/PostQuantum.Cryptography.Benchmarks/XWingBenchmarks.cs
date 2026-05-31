@@ -21,7 +21,11 @@ public class XWingBenchmarks
     }
 
     [GlobalCleanup]
-    public void Cleanup() => _priv.Dispose();
+    public void Cleanup()
+    {
+        _pub.Dispose();
+        _priv.Dispose();
+    }
 
     [Benchmark]
     public XWingPrivateKey GenerateKeyPair()
