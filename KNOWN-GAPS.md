@@ -38,18 +38,17 @@ If something important is missing from this list, that itself is a gap — pleas
 
 ## Testing
 
-- Tests cover round-trips, key/secret sizes, determinism, tamper detection, context binding, PEM/PKCS#8/SPKI interchange (including label-mismatch rejection), all ML-KEM and ML-DSA parameter sets, the RFC 7748 X25519 KATs (single + iterated) and DH commutativity property, KEM implicit-rejection robustness ("fuzz"-style random/garbage ciphertext), the new Span-based zero-allocation overloads, regression-style SHA-256 fingerprints of the deterministic `seed → public-key` mapping for every primitive (anchoring wrapper integrity), byte-equality cross-checks between the wrapper and direct BCL invocation, and X-Wing key-generation and decapsulation KATs from the IETF draft (Appendix C).
+- Tests cover round-trips, key/secret sizes, determinism, tamper detection, context binding (including FIPS 204 §5.2 255-byte limit), PEM/PKCS#8/SPKI interchange (including label-mismatch rejection), all ML-KEM and ML-DSA parameter sets, the RFC 7748 X25519 KATs (single + iterated) and DH commutativity property, KEM implicit-rejection robustness, the Span-based zero-allocation overloads, byte-oriented one-shot convenience facades (cross-checked against the typed API for bit-identical output), regression-style SHA-256 fingerprints of the deterministic `seed → public-key` mapping for every primitive, byte-equality cross-checks between the wrapper and direct BCL invocation, disposal idempotency and use-after-dispose for every key type, cross-algorithm misuse (decapsulating with a wrong-parameter-set key), thread-safety (parallel use across distinct instances), resource-discipline smoke (5000 import/dispose cycles), and X-Wing key-generation and decapsulation KATs from the IETF draft (Appendix C).
 - ML-KEM / ML-DSA / X-Wing tests are gated on platform support (see above) and skip cleanly where the runtime does not expose the primitives. The X25519 tests are unconditional.
-- The robustness tests are a fast in-process property check, **not** a coverage-guided fuzzer. A dedicated fuzzing harness (e.g. SharpFuzz) is future work.
+- An **in-process smoke fuzzer** runs on every CI build (5,000 pseudo-random inputs per target, asserting only documented exception types escape and that KEM decapsulation of garbage is deterministic per-key). A **coverage-guided AFL harness** lives in [`fuzz/`](fuzz/) for out-of-band runs.
 - The deterministic-fingerprint KATs anchor wrapper integrity against the BCL's own implementation; they are **not** a substitute for a full NIST ACVP / Wycheproof interop battery.
-- Performance baselines are published in [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) along with a reproducible benchmark project (`benchmarks/PostQuantum.Cryptography.Benchmarks`). The bundled X25519's working arrays are now stack-allocated, so X-Wing's per-call heap pressure is small (≤200 B on the Span overloads).
+- Performance baselines are published in [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) along with a reproducible benchmark project (`benchmarks/PostQuantum.Cryptography.Benchmarks`). The bundled X25519's working arrays are stack-allocated, so X-Wing's per-call heap pressure is small (≤200 B on the Span overloads).
 
 ## Operational
 
-- **CI** (GitHub Actions) builds, tests, packs, generates a CycloneDX SBOM, and verifies the build is deterministic (identical assembly hash across two builds). It also reports runtime PQC support so the skip/pass split is visible.
-- **Package signing** is wired into CI but runs only when a `CODESIGN_PFX_BASE64` secret is configured; no signing certificate ships with the repo.
-- No `AssemblyOriginatorKeyFile` strong-name signing of the assembly.
-- SBOM is generated in CI but not yet published as a release asset.
+- **CI** (GitHub Actions) builds + tests on Ubuntu, Windows, and macOS; runs CodeQL on every push and weekly; audits transitive packages for known CVEs; verifies the build is byte-deterministic; and reports runtime PQC support so the skip/pass split is visible.
+- **Release workflow** (`.github/workflows/release.yml`) packs, runs a smoke test against the freshly packed `.nupkg`, requires NuGet package signing for non-preview tags (fails closed; preview tags can still skip cleanly), generates and attaches a CycloneDX SBOM to the GitHub Release, and publishes to nuget.org.
+- **No `AssemblyOriginatorKeyFile` strong-name signing** of the assembly. Once shipped, this would be permanent ABI surface; we'll add it only if a real enterprise consumer requires it.
 
 ---
 

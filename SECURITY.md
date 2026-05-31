@@ -2,13 +2,13 @@
 
 ## Status and assurance level
 
-`PostQuantum.Cryptography` is **preview software** (`0.1.x`). It is built to a high standard and tested, but it has **not** undergone an independent third-party security audit. Treat it accordingly: it is suitable for evaluation, prototyping, and helping the .NET ecosystem move toward post-quantum cryptography — not yet as the sole protection for high-value production secrets without your own review.
+`PostQuantum.Cryptography` is **preview software** (`0.2.x` line). It is built to a high standard and tested, but it has **not** undergone an independent third-party security audit. Treat it accordingly: it is suitable for evaluation, prototyping, and helping the .NET ecosystem move toward post-quantum cryptography — not yet as the sole protection for high-value production secrets without your own review.
 
 ## What this library trusts
 
 The cryptographic strength of this library rests on two foundations:
 
-1. **The .NET 10 BCL.** ML-KEM-768 (FIPS 203) and ML-DSA-87 (FIPS 204), and the SHA-3 / SHAKE primitives, are provided by `System.Security.Cryptography` in the .NET 10 runtime. We do not reimplement them. Their correctness and side-channel posture are the platform's responsibility.
+1. **The .NET 10 BCL.** All three ML-KEM parameter sets (FIPS 203: 512/768/1024), all three ML-DSA parameter sets (FIPS 204: 44/65/87), and the SHA-3 / SHAKE primitives, are provided by `System.Security.Cryptography` in the .NET 10 runtime. We do not reimplement them. Their correctness and side-channel posture are the platform's responsibility.
 
 2. **A bundled X25519 implementation.** The BCL does not expose X25519, which X-Wing requires. We include a small, constant-time implementation ported faithfully from the public-domain TweetNaCl `crypto_scalarmult`, verified against the RFC 7748 known-answer tests. This is the only original cryptographic primitive in the library and the most important code to review.
 
@@ -79,9 +79,10 @@ We're happy to credit you in the advisory and release notes — let us know how 
 
 ## Supported versions
 
-| Version line     | Status   | Receives security fixes? |
-| ---------------- | -------- | ------------------------ |
-| `0.x` (preview)  | Active   | Latest release only      |
+| Version line     | Status   | Receives security fixes?                                |
+| ---------------- | -------- | ------------------------------------------------------- |
+| `0.2.x` (preview, current) | Active   | Latest release only                           |
+| `0.1.x` (preview, earlier) | Superseded | No — upgrade to `0.2.x`                      |
 | `1.x` and later  | _t.b.d._ | The two most recent minor releases of the current major |
 
 When `1.0` ships, this table will be updated with a concrete policy. While we are

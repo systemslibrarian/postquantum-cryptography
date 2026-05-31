@@ -90,7 +90,9 @@ public static class XWing
     {
         if (decapsulationKey.Length != DecapsulationKeySizeInBytes)
         {
-            throw new ArgumentException($"Decapsulation key must be {DecapsulationKeySizeInBytes} bytes.", nameof(decapsulationKey));
+            throw new ArgumentException(
+                $"Expected a {DecapsulationKeySizeInBytes}-byte X-Wing decapsulation key but got {decapsulationKey.Length} bytes.",
+                nameof(decapsulationKey));
         }
 
         return XWingPrivateKey.FromSeed(decapsulationKey);
@@ -103,7 +105,9 @@ public static class XWing
     {
         if (encapsulationKey.Length != EncapsulationKeySizeInBytes)
         {
-            throw new ArgumentException($"Encapsulation key must be {EncapsulationKeySizeInBytes} bytes.", nameof(encapsulationKey));
+            throw new ArgumentException(
+                $"Expected a {EncapsulationKeySizeInBytes}-byte X-Wing encapsulation key but got {encapsulationKey.Length} bytes.",
+                nameof(encapsulationKey));
         }
 
         byte[] pkM = encapsulationKey[..MLKemEncapsulationKeySize].ToArray();
@@ -194,12 +198,16 @@ public sealed class XWingPublicKey : IDisposable
     {
         if (ciphertext.Length != XWing.CiphertextSizeInBytes)
         {
-            throw new ArgumentException($"Ciphertext buffer must be {XWing.CiphertextSizeInBytes} bytes.", nameof(ciphertext));
+            throw new ArgumentException(
+                $"Expected a {XWing.CiphertextSizeInBytes}-byte X-Wing ciphertext buffer but got {ciphertext.Length} bytes.",
+                nameof(ciphertext));
         }
 
         if (sharedSecret.Length != XWing.SharedSecretSizeInBytes)
         {
-            throw new ArgumentException($"Shared-secret buffer must be {XWing.SharedSecretSizeInBytes} bytes.", nameof(sharedSecret));
+            throw new ArgumentException(
+                $"Expected a {XWing.SharedSecretSizeInBytes}-byte X-Wing shared-secret buffer but got {sharedSecret.Length} bytes.",
+                nameof(sharedSecret));
         }
 
         EncapsulateCore(ciphertext, sharedSecret);
@@ -375,7 +383,9 @@ public sealed class XWingPrivateKey : IDisposable
     {
         if (sharedSecret.Length != XWing.SharedSecretSizeInBytes)
         {
-            throw new ArgumentException($"Shared-secret buffer must be {XWing.SharedSecretSizeInBytes} bytes.", nameof(sharedSecret));
+            throw new ArgumentException(
+                $"Expected a {XWing.SharedSecretSizeInBytes}-byte X-Wing shared-secret buffer but got {sharedSecret.Length} bytes.",
+                nameof(sharedSecret));
         }
 
         DecapsulateCore(ciphertext, sharedSecret);
@@ -386,7 +396,9 @@ public sealed class XWingPrivateKey : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (ciphertext.Length != XWing.CiphertextSizeInBytes)
         {
-            throw new ArgumentException($"Ciphertext must be {XWing.CiphertextSizeInBytes} bytes.", nameof(ciphertext));
+            throw new ArgumentException(
+                $"Expected a {XWing.CiphertextSizeInBytes}-byte X-Wing ciphertext but got {ciphertext.Length} bytes.",
+                nameof(ciphertext));
         }
 
         ReadOnlySpan<byte> ctM = ciphertext[..XWing.MLKemCiphertextSize];

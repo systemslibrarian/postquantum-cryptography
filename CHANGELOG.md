@@ -7,6 +7,93 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.0-preview.1] — 2026-05-31
+
+The first preview of the `0.2.x` line. Consolidates the API and engineering
+work that landed across `0.1.0-preview.{2,3}` plus one substantive
+performance fix, and is the version intended for the first nuget.org
+publication.
+
+### Added
+
+- **Byte-oriented one-shot convenience layer** alongside the typed API:
+  `MlKemOperations`, `MLDsaOperations`, `XWingHybridKem`, and the small
+  `PqKeyPair<TPublic, TPrivate>` bundle struct. For fire-and-forget use
+  where a key only needs to live for a single operation. Bit-identical
+  results to the typed API for the same inputs (proven by
+  `ConvenienceFacadeTests`).
+- **Resource-discipline test** (`ResourceDisciplineTests`) — 5,000
+  import/dispose cycles of `XWingPrivateKey` with handle-count and
+  working-set assertions, locking in the new exception-safe `FromSeed`.
+- **Six runnable samples** under `samples/` covering hybrid handshake,
+  signed files, hybrid file encryption, zero-allocation hot loops, a small
+  `pqcsign` CLI, and signed-package distribution.
+- **`docs/RECIPES.md`** — 11-recipe pattern cookbook cross-linked to the
+  samples.
+- **`docs/PERFORMANCE.md`** — measured benchmark numbers with
+  reproduction instructions.
+
+### Changed
+
+- **`XWingPublicKey` is now `IDisposable`** and caches an expanded
+  ML-KEM-768 handle internally (mirrors the §5.5.1 caching the
+  decapsulation side already uses).
+- **X25519 work arrays moved to `stackalloc`**: X-Wing per-call heap
+  pressure drops by >1500× on the Span overloads (273 KB → 171 B per
+  encap; 137 KB → 57 B per decap). Wall-clock time unchanged. The bundled
+  X25519 retains its constant-time core ladder.
+- **`XWingPrivateKey.FromSeed` is now exception-safe**: the freshly
+  imported ML-KEM handle and the X25519 scalar are zeroed/disposed if
+  construction throws partway.
+- **ML-DSA context length validation**: FIPS 204 §5.2 caps at 255 bytes;
+  the wrapper now validates up-front with a clear `ArgumentException`
+  instead of a generic `CryptographicException` from the BCL.
+- **PEM importers validate the label up-front** (`PRIVATE KEY` vs
+  `PUBLIC KEY`); passing the wrong kind throws `ArgumentException`
+  immediately, not a delayed `CryptographicException`.
+- **`KemEncapsulation.ToString()`** returns only the type name — never
+  the bytes — so secrets can't leak via logs or exception messages.
+- **`[DebuggerDisplay]`** on every public key type so watch windows show
+  algorithm + state without dumping internal byte arrays.
+- **Thread-safety contract documented** in `SECURITY.md` and on every
+  key type's `<remarks>` (instances NOT thread-safe; static facades are).
+  `ThreadSafetyTests` proves the safe pattern.
+- **NuGet metadata polished**: sharper Title and Description, expanded
+  tag set, `PackageReleaseNotes` URL pointing at the changelog,
+  `PackageIcon` wiring conditional on `assets/icon.png`.
+- **Release workflow** requires package signing for stable tags (fails
+  closed), generates and attaches a CycloneDX SBOM to the GitHub Release,
+  and runs the consumer smoke test against the packed `.nupkg` before
+  publishing.
+- **Public API locked**: the surface lives in `PublicAPI.Shipped.txt`,
+  guarded by `Microsoft.CodeAnalysis.PublicApiAnalyzers`.
+- **Completely rewritten README** to a professional foundation-library
+  standard: motivation, differentiation table vs raw BCL / BouncyCastle,
+  two-API decision guide, quick-start per primitive, security posture,
+  measured performance, platform support matrix, and an explicit
+  "About this library" section with the human + AI transparency
+  paragraph.
+
+### Fixed
+
+- README documentation type-name bugs (`MLKem768PrivateKey` →
+  `MLKemPrivateKey`, etc.).
+- X-Wing `Encapsulate` / `Decapsulate` now zero intermediate secrets in
+  `try/finally` so the cleanup runs even on exception paths.
+- All `ArgumentException` messages now consistently include both expected
+  and actual lengths plus the algorithm name where relevant.
+
+### Test coverage
+
+140+ unit tests covering: round-trips and KATs across every parameter
+set; deterministic seed→public-key fingerprints; byte-equality
+cross-checks vs direct BCL; PEM label disambiguation; ML-DSA context
+limit; Span-overload zero-allocation; disposal idempotency and
+use-after-dispose; cross-algorithm misuse; thread-safety; resource
+discipline; an in-process smoke fuzzer (5,000 random inputs per target)
+that runs on every CI build; X-Wing IETF draft Appendix C KATs;
+RFC 7748 X25519 KATs (single + 1000-iteration + DH commutativity).
+
 ## [0.1.0-preview.3] — 2026-05-31
 
 ### Added
