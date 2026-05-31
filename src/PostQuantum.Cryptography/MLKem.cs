@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using PostQuantum.Cryptography.Internal;
 
 // The PKCS#8 / SubjectPublicKeyInfo / PEM members of MLKem are annotated
 // [Experimental("SYSLIB5006")] in .NET 10. The *encodings* themselves are
@@ -37,6 +38,31 @@ public sealed class MLKemPublicKey : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         _kem.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
         return new KemEncapsulation(ciphertext, sharedSecret);
+    }
+
+    /// <summary>
+    /// Encapsulates a fresh random shared secret to this public key, writing the
+    /// ciphertext and shared secret into caller-provided buffers. The buffers
+    /// must be exactly <see cref="MLKemAlgorithm.CiphertextSizeInBytes"/> and
+    /// <see cref="MLKemAlgorithm.SharedSecretSizeInBytes"/> bytes for
+    /// <see cref="Algorithm"/>. This overload performs no allocation.
+    /// </summary>
+    public void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        int expectedCt = _kem.Algorithm.CiphertextSizeInBytes;
+        int expectedSs = _kem.Algorithm.SharedSecretSizeInBytes;
+        if (ciphertext.Length != expectedCt)
+        {
+            throw new ArgumentException($"Ciphertext buffer must be {expectedCt} bytes for {_kem.Algorithm.Name}.", nameof(ciphertext));
+        }
+
+        if (sharedSecret.Length != expectedSs)
+        {
+            throw new ArgumentException($"Shared-secret buffer must be {expectedSs} bytes for {_kem.Algorithm.Name}.", nameof(sharedSecret));
+        }
+
+        _kem.Encapsulate(ciphertext, sharedSecret);
     }
 
     /// <summary>Exports the raw encapsulation key.</summary>
@@ -111,6 +137,30 @@ public sealed class MLKemPrivateKey : IDisposable
         byte[] sharedSecret = new byte[_kem.Algorithm.SharedSecretSizeInBytes];
         _kem.Decapsulate(ciphertext, sharedSecret);
         return sharedSecret;
+    }
+
+    /// <summary>
+    /// Recovers the shared secret from <paramref name="ciphertext"/>, writing it
+    /// into the caller-provided <paramref name="sharedSecret"/> buffer (which must
+    /// be exactly <see cref="MLKemAlgorithm.SharedSecretSizeInBytes"/> bytes for
+    /// <see cref="Algorithm"/>). This overload performs no allocation.
+    /// </summary>
+    public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        int expectedCt = _kem.Algorithm.CiphertextSizeInBytes;
+        int expectedSs = _kem.Algorithm.SharedSecretSizeInBytes;
+        if (ciphertext.Length != expectedCt)
+        {
+            throw new ArgumentException($"Ciphertext must be {expectedCt} bytes for {_kem.Algorithm.Name}.", nameof(ciphertext));
+        }
+
+        if (sharedSecret.Length != expectedSs)
+        {
+            throw new ArgumentException($"Shared-secret buffer must be {expectedSs} bytes for {_kem.Algorithm.Name}.", nameof(sharedSecret));
+        }
+
+        _kem.Decapsulate(ciphertext, sharedSecret);
     }
 
     /// <summary>Exports the matching encapsulation (public) key.</summary>
@@ -191,17 +241,27 @@ public static class MLKemKey
 
     /// <summary>
     /// Imports a private key from a PEM-encoded PKCS#8 PrivateKeyInfo structure
-    /// (a <c>PRIVATE KEY</c> block).
+    /// (a <c>-----BEGIN PRIVATE KEY-----</c> block). Throws
+    /// <see cref="ArgumentException"/> if <paramref name="pem"/> is a public-key
+    /// PEM, an encrypted-private-key PEM, or otherwise unrecognized.
     /// </summary>
     public static MLKemPrivateKey ImportPrivateKeyFromPem(ReadOnlySpan<char> pem)
-        => new(MLKem.ImportFromPem(pem));
+    {
+        PemLabels.RequirePrivateKeyLabel(pem);
+        return new(MLKem.ImportFromPem(pem));
+    }
 
     /// <summary>
     /// Imports a public key from a PEM-encoded SubjectPublicKeyInfo structure
-    /// (a <c>PUBLIC KEY</c> block).
+    /// (a <c>-----BEGIN PUBLIC KEY-----</c> block). Throws
+    /// <see cref="ArgumentException"/> if <paramref name="pem"/> is a private-key
+    /// PEM or otherwise unrecognized.
     /// </summary>
     public static MLKemPublicKey ImportPublicKeyFromPem(ReadOnlySpan<char> pem)
-        => new(MLKem.ImportFromPem(pem));
+    {
+        PemLabels.RequirePublicKeyLabel(pem);
+        return new(MLKem.ImportFromPem(pem));
+    }
 }
 
 /// <summary>

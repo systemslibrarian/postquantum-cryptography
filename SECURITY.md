@@ -24,8 +24,8 @@ The cryptographic strength of this library rests on two foundations:
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, up-to-date list. Highlights:
 
 - The bundled X25519 is constant-time in its core ladder but has **not** been independently audited for microarchitectural side channels.
-- No FIPS 140-3 validation is claimed for this wrapper.
-- The API surface is intentionally small; PEM/PKCS#8 interchange and additional parameter sets are not yet exposed.
+- No FIPS 140-3 validation is claimed for this wrapper. The underlying BCL primitives' validation status is the platform's matter.
+- The API surface is intentionally small. Encrypted PKCS#8 (password-protected private keys) is not yet wrapped, and X-Wing keys are exchanged as their raw fixed-size byte strings only.
 
 ## Reporting a vulnerability
 

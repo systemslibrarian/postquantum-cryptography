@@ -1,0 +1,103 @@
+name: Release
+
+# Publishes the NuGet package + symbols when a `v*` tag is pushed.
+#
+# Required repository secrets:
+#   NUGET_API_KEY        — push token for nuget.org (Account → API Keys)
+#
+# Optional repository secrets (only used if defined):
+#   CODESIGN_PFX_BASE64    — base64-encoded code-signing PFX
+#   CODESIGN_PFX_PASSWORD  — PFX password
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v0.1.0-preview.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  CONFIGURATION: Release
+
+jobs:
+  publish:
+    name: Pack, sign, and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore PostQuantum.Cryptography.slnx
+
+      - name: Build (CI deterministic)
+        run: dotnet build PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Test
+        run: dotnet test PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-build
+
+      - name: Pack
+        run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c ${{ env.CONFIGURATION }} --no-build -o ./artifacts/packages
+
+      - name: Sign packages (optional)
+        env:
+          CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
+          CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CODESIGN_PFX_BASE64:-}" ]; then
+            echo "No CODESIGN_PFX_BASE64 secret configured — skipping package signing."
+            exit 0
+          fi
+          echo "$CODESIGN_PFX_BASE64" | base64 -d > codesign.pfx
+          for pkg in ./artifacts/packages/*.nupkg; do
+            dotnet nuget sign "$pkg" \
+              --certificate-path codesign.pfx \
+              --certificate-password "$CODESIGN_PFX_PASSWORD" \
+              --timestamper http://timestamp.digicert.com
+          done
+          rm -f codesign.pfx
+
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NUGET_API_KEY:-}" ]; then
+            echo "::error::NUGET_API_KEY secret is not set — cannot publish."
+            exit 1
+          fi
+          for pkg in ./artifacts/packages/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: ./artifacts/packages/*
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: ./artifacts/packages/*

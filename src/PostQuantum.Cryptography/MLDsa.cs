@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using PostQuantum.Cryptography.Internal;
 
 // The PKCS#8 / SubjectPublicKeyInfo / PEM members of MLDsa are annotated
 // [Experimental("SYSLIB5006")] in .NET 10. The *encodings* themselves are
@@ -27,8 +28,16 @@ public sealed class MLDsaPublicKey : IDisposable
     /// <summary>The ML-DSA parameter set this key belongs to.</summary>
     public MLDsaAlgorithm Algorithm => _dsa.Algorithm;
 
-    /// <summary>Verifies a signature over <paramref name="data"/> with an optional context.</summary>
-    public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context = default)
+    /// <summary>Verifies a signature over <paramref name="data"/>.</summary>
+    public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
+        => Verify(data, signature, context: default);
+
+    /// <summary>
+    /// Verifies a signature over <paramref name="data"/> bound to the
+    /// supplied <paramref name="context"/> (FIPS 204 §5.2). The signer and
+    /// verifier must agree on the same context bytes.
+    /// </summary>
+    public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         return _dsa.VerifyData(data, signature, context);
@@ -94,13 +103,48 @@ public sealed class MLDsaPrivateKey : IDisposable
         return new MLDsaPublicKey(MLDsa.ImportMLDsaPublicKey(_dsa.Algorithm, _dsa.ExportMLDsaPublicKey()));
     }
 
-    /// <summary>Signs <paramref name="data"/> with an optional context, returning the signature.</summary>
-    public byte[] SignData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context = default)
+    /// <summary>Signs <paramref name="data"/>, returning a freshly-allocated signature.</summary>
+    public byte[] SignData(ReadOnlySpan<byte> data)
+        => SignData(data, context: default);
+
+    /// <summary>
+    /// Signs <paramref name="data"/> bound to <paramref name="context"/>
+    /// (FIPS 204 §5.2), returning a freshly-allocated signature. The verifier
+    /// must supply the same context bytes.
+    /// </summary>
+    public byte[] SignData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         byte[] signature = new byte[_dsa.Algorithm.SignatureSizeInBytes];
         _dsa.SignData(data, signature, context);
         return signature;
+    }
+
+    /// <summary>
+    /// Signs <paramref name="data"/>, writing the signature into the
+    /// caller-provided <paramref name="destination"/> buffer (which must be
+    /// exactly <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/> bytes for
+    /// <see cref="Algorithm"/>). Allocation-free.
+    /// </summary>
+    public void SignData(ReadOnlySpan<byte> data, Span<byte> destination)
+        => SignData(data, destination, context: default);
+
+    /// <summary>
+    /// Signs <paramref name="data"/> bound to <paramref name="context"/>
+    /// (FIPS 204 §5.2), writing the signature into <paramref name="destination"/>
+    /// (which must be exactly <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/>
+    /// bytes for <see cref="Algorithm"/>). Allocation-free.
+    /// </summary>
+    public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        int expected = _dsa.Algorithm.SignatureSizeInBytes;
+        if (destination.Length != expected)
+        {
+            throw new ArgumentException($"Destination buffer must be {expected} bytes for {_dsa.Algorithm.Name}.", nameof(destination));
+        }
+
+        _dsa.SignData(data, destination, context);
     }
 
     /// <summary>Exports the matching public key.</summary>
@@ -179,13 +223,29 @@ public static class MLDsaKey
     public static MLDsaPublicKey ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         => new(MLDsa.ImportSubjectPublicKeyInfo(source));
 
-    /// <summary>Imports a private key from a PEM-encoded PKCS#8 PrivateKeyInfo structure.</summary>
+    /// <summary>
+    /// Imports a private key from a PEM-encoded PKCS#8 PrivateKeyInfo structure
+    /// (a <c>-----BEGIN PRIVATE KEY-----</c> block). Throws
+    /// <see cref="ArgumentException"/> if <paramref name="pem"/> is a public-key
+    /// PEM, an encrypted-private-key PEM, or otherwise unrecognized.
+    /// </summary>
     public static MLDsaPrivateKey ImportPrivateKeyFromPem(ReadOnlySpan<char> pem)
-        => new(MLDsa.ImportFromPem(pem));
+    {
+        PemLabels.RequirePrivateKeyLabel(pem);
+        return new(MLDsa.ImportFromPem(pem));
+    }
 
-    /// <summary>Imports a public key from a PEM-encoded SubjectPublicKeyInfo structure.</summary>
+    /// <summary>
+    /// Imports a public key from a PEM-encoded SubjectPublicKeyInfo structure
+    /// (a <c>-----BEGIN PUBLIC KEY-----</c> block). Throws
+    /// <see cref="ArgumentException"/> if <paramref name="pem"/> is a private-key
+    /// PEM or otherwise unrecognized.
+    /// </summary>
     public static MLDsaPublicKey ImportPublicKeyFromPem(ReadOnlySpan<char> pem)
-        => new(MLDsa.ImportFromPem(pem));
+    {
+        PemLabels.RequirePublicKeyLabel(pem);
+        return new(MLDsa.ImportFromPem(pem));
+    }
 }
 
 /// <summary>

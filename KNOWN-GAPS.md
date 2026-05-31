@@ -9,7 +9,7 @@ If something important is missing from this list, that itself is a gap — pleas
 - **ML-KEM:** all three FIPS 203 parameter sets are exposed — `MLKem512`, `MLKem768` (recommended default), `MLKem1024`.
 - **ML-DSA:** all three FIPS 204 parameter sets are exposed — `MLDsa44`, `MLDsa65`, `MLDsa87` (recommended default).
 - **SLH-DSA (FIPS 205) is deliberately deferred.** The .NET 10 BCL type `System.Security.Cryptography.SlhDsa` is annotated `[Experimental("SYSLIB5006")]` — "for evaluation purposes only and is subject to change or removal." Exposing an experimental, unstable primitive would contradict this library's secure-by-default, no-surprises discipline, so SLH-DSA is intentionally **not** wrapped until it ships as a stable API.
-- **No streaming / pre-hash / external-mu signing.** `MLDsa.SignPreHash`, `SignMu`, and external-mu flows are not surfaced. Only `SignData` / `VerifyData` (with optional context) are exposed.
+- **No streaming / pre-hash / external-mu signing.** `MLDsa.SignPreHash`, `SignMu`, and external-mu flows are not surfaced. Only `SignData` / `Verify` (with optional FIPS 204 §5.2 context) are exposed. A `SignData(Stream)` overload is deliberately not provided, because the .NET 10 BCL has no native streaming variant for ML-DSA and a wrapper that silently buffered an arbitrarily-large stream into memory would be deceptive — callers can `ReadAllBytes` themselves and own the memory decision.
 - **No X.509 / certificate integration** (no `CertificateRequest` helpers, etc.).
 
 ## Key formats
@@ -38,10 +38,10 @@ If something important is missing from this list, that itself is a gap — pleas
 
 ## Testing
 
-- Tests cover round-trips, key/secret sizes, determinism, tamper detection, context binding, PEM/PKCS#8/SPKI interchange, all ML-KEM and ML-DSA parameter sets, the RFC 7748 X25519 KATs (single + iterated) and DH commutativity property, KEM implicit-rejection robustness ("fuzz"-style random/garbage ciphertext), and X-Wing key-generation and decapsulation KATs from the draft.
+- Tests cover round-trips, key/secret sizes, determinism, tamper detection, context binding, PEM/PKCS#8/SPKI interchange (including label-mismatch rejection), all ML-KEM and ML-DSA parameter sets, the RFC 7748 X25519 KATs (single + iterated) and DH commutativity property, KEM implicit-rejection robustness ("fuzz"-style random/garbage ciphertext), the new Span-based zero-allocation overloads, regression-style SHA-256 fingerprints of the deterministic `seed → public-key` mapping for every primitive (anchoring wrapper integrity), byte-equality cross-checks between the wrapper and direct BCL invocation, and X-Wing key-generation and decapsulation KATs from the IETF draft (Appendix C).
 - ML-KEM / ML-DSA / X-Wing tests are gated on platform support (see above) and skip cleanly where the runtime does not expose the primitives. The X25519 tests are unconditional.
 - The robustness tests are a fast in-process property check, **not** a coverage-guided fuzzer. A dedicated fuzzing harness (e.g. SharpFuzz) is future work.
-- There is **no** large third-party interop test corpus yet (e.g., ACVP / Wycheproof-style batteries).
+- The deterministic-fingerprint KATs anchor wrapper integrity against the BCL's own implementation; they are **not** a substitute for a full NIST ACVP / Wycheproof interop battery.
 - No performance benchmarks are published.
 
 ## Operational

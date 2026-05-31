@@ -17,9 +17,13 @@ env:
   CONFIGURATION: Release
 
 jobs:
-  build-test-pack:
-    name: Build, test & pack
-    runs-on: ubuntu-latest
+  build-test:
+    name: Build & test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +35,7 @@ jobs:
       - name: Report runtime PQC support
         # Visibility: shows whether this runner's runtime exposes ML-KEM/ML-DSA.
         # The test suite skips (does not fail) the PQC tests when unsupported.
+        shell: bash
         run: |
           dotnet --info
           openssl version || true
@@ -39,13 +44,63 @@ jobs:
         run: dotnet restore PostQuantum.Cryptography.slnx
 
       - name: Build (deterministic / CI)
-        run: dotnet build PostQuantum.Cryptography.slnx -c $CONFIGURATION --no-restore -p:ContinuousIntegrationBuild=true
+        run: dotnet build PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Test
-        run: dotnet test PostQuantum.Cryptography.slnx -c $CONFIGURATION --no-build --logger "trx;LogFileName=test-results.trx" --results-directory ./artifacts/test-results
+        run: dotnet test PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=test-results-${{ matrix.os }}.trx" --results-directory ./artifacts/test-results --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: ./artifacts/test-results/**
+          if-no-files-found: warn
+
+  vulnerability-audit:
+    name: Vulnerability audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore (with NuGet audit)
+        run: dotnet restore PostQuantum.Cryptography.slnx
+      - name: List vulnerable packages
+        # Fails the job if any *direct or transitive* dependency has a known
+        # vulnerability. NuGetAudit is also active during restore (see
+        # Directory.Build.props) but we make it explicit here so the failure
+        # is visible in the job log.
+        run: |
+          set -euo pipefail
+          out=$(dotnet list PostQuantum.Cryptography.slnx package --vulnerable --include-transitive 2>&1)
+          echo "$out"
+          if echo "$out" | grep -q "has the following vulnerable packages"; then
+            echo "::error::Vulnerable packages found."
+            exit 1
+          fi
+
+  pack-and-sbom:
+    name: Pack + SBOM
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore PostQuantum.Cryptography.slnx
+
+      - name: Build (CI)
+        run: dotnet build PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Pack
-        run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION --no-build -o ./artifacts/packages
+        run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c ${{ env.CONFIGURATION }} --no-build -o ./artifacts/packages
 
       - name: Generate SBOM (CycloneDX)
         continue-on-error: true
@@ -54,14 +109,13 @@ jobs:
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet CycloneDX src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -o ./artifacts/sbom || true
 
-      - name: Upload artifacts
+      - name: Upload packages and SBOM
         uses: actions/upload-artifact@v4
         with:
-          name: packages-and-reports
+          name: packages-and-sbom
           path: |
             ./artifacts/packages/*.nupkg
             ./artifacts/packages/*.snupkg
-            ./artifacts/test-results/*.trx
             ./artifacts/sbom/**
           if-no-files-found: warn
 
@@ -70,7 +124,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -79,8 +132,8 @@ jobs:
       - name: Build twice and compare assembly hashes
         run: |
           set -euo pipefail
-          dotnet build src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION -p:ContinuousIntegrationBuild=true -o ./out1
-          dotnet build src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION -p:ContinuousIntegrationBuild=true -o ./out2
+          dotnet build src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c ${{ env.CONFIGURATION }} -p:ContinuousIntegrationBuild=true -o ./out1
+          dotnet build src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c ${{ env.CONFIGURATION }} -p:ContinuousIntegrationBuild=true -o ./out2
           h1=$(sha256sum ./out1/PostQuantum.Cryptography.dll | cut -d' ' -f1)
           h2=$(sha256sum ./out2/PostQuantum.Cryptography.dll | cut -d' ' -f1)
           echo "build 1: $h1"
@@ -90,37 +143,3 @@ jobs:
             exit 1
           fi
           echo "Deterministic build verified."
-
-  sign:
-    name: Sign packages (release only)
-    needs: build-test-pack
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Pack
-        run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c $CONFIGURATION -o ./artifacts/packages
-
-      - name: Sign (only if a code-signing certificate secret is configured)
-        env:
-          CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
-          CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
-        run: |
-          if [ -z "${CODESIGN_PFX_BASE64:-}" ]; then
-            echo "No CODESIGN_PFX_BASE64 secret configured — skipping package signing."
-            exit 0
-          fi
-          echo "$CODESIGN_PFX_BASE64" | base64 -d > codesign.pfx
-          for pkg in ./artifacts/packages/*.nupkg; do
-            dotnet nuget sign "$pkg" \
-              --certificate-path codesign.pfx \
-              --certificate-password "$CODESIGN_PFX_PASSWORD" \
-              --timestamper http://timestamp.digicert.com
-          done
-          rm -f codesign.pfx

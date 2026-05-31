@@ -40,11 +40,11 @@ dotnet add package PostQuantum.Cryptography --prerelease
 using PostQuantum.Cryptography;
 
 // Recipient generates a key pair and publishes the encapsulation (public) key.
-using MLKem768PrivateKey recipient = MLKem768.GenerateKeyPair();
+using MLKemPrivateKey recipient = MLKem768.GenerateKeyPair();
 byte[] publicKeyBytes = recipient.ExportEncapsulationKey();
 
 // Sender encapsulates a fresh shared secret to that public key.
-using MLKem768PublicKey publicKey = MLKem768.ImportEncapsulationKey(publicKeyBytes);
+using MLKemPublicKey publicKey = MLKem768.ImportEncapsulationKey(publicKeyBytes);
 KemEncapsulation result = publicKey.Encapsulate();
 byte[] ciphertext = result.Ciphertext;       // send to recipient
 byte[] senderSecret = result.SharedSecret;    // 32 bytes, keep secret
@@ -59,8 +59,8 @@ byte[] recipientSecret = recipient.Decapsulate(ciphertext);
 ```csharp
 using PostQuantum.Cryptography;
 
-using MLDsa87PrivateKey signer = MLDsa87.GenerateKeyPair();
-using MLDsa87PublicKey verifier = signer.GetPublicKey();
+using MLDsaPrivateKey signer = MLDsa87.GenerateKeyPair();
+using MLDsaPublicKey verifier = signer.GetPublicKey();
 
 byte[] message = "To God be the glory."u8.ToArray();
 byte[] signature = signer.SignData(message);
@@ -123,6 +123,24 @@ using MLKemPrivateKey fromSeed = MLKem768.ImportPrivateSeed(seed);
 
 ML-DSA exposes the same surface via `MLDsaKey` and the `MLDsaPrivateKey` / `MLDsaPublicKey` types.
 
+### Zero-allocation overloads
+
+Every hot-path method has a `Span<byte>` overload that writes into caller-provided buffers, so no transient secrets sit on the GC heap:
+
+```csharp
+using MLKemPrivateKey priv = MLKem768.GenerateKeyPair();
+using MLKemPublicKey  pub  = priv.GetPublicKey();
+
+Span<byte> ciphertext   = stackalloc byte[MLKem768.CiphertextSizeInBytes];
+Span<byte> sharedSecret = stackalloc byte[MLKem768.SharedSecretSizeInBytes];
+
+pub.Encapsulate(ciphertext, sharedSecret);
+// ... transmit ciphertext, use sharedSecret to key a symmetric algorithm ...
+CryptographicOperations.ZeroMemory(sharedSecret);
+```
+
+The same pattern works for `XWingPublicKey.Encapsulate`, `XWingPrivateKey.Decapsulate`, `MLKemPrivateKey.Decapsulate`, and `MLDsaPrivateKey.SignData`.
+
 ## Security posture
 
 - **Secure by default.** Every key is generated with a cryptographically secure RNG. There are no insecure modes, no "raw" backdoors, and no footgun parameters.
@@ -130,6 +148,7 @@ ML-DSA exposes the same surface via `MLDsaKey` and the `MLDsaPrivateKey` / `MLDs
 - **Minimal trusted code.** The only cryptographic code original to this library is a faithful, constant-time port of X25519 (RFC 7748), which the BCL does not provide. It is verified against the RFC 7748 known-answer tests. Everything else delegates to the platform.
 - **Sensitive material is cleared.** Private-key objects implement `IDisposable` and zero their secrets (and intermediate shared secrets) on disposal. **Dispose your keys.**
 - **Shared secrets are yours to protect.** Use a returned `SharedSecret` to key a symmetric algorithm, then clear it with `CryptographicOperations.ZeroMemory`.
+- **AOT-ready.** The package is marked `IsAotCompatible` and `IsTrimmable`; the entire library delegates to BCL APIs that are AOT- and trim-friendly. No reflection, no dynamic loading, no source generators.
 - **Honest about gaps.** This is preview software. Read [`KNOWN-GAPS.md`](KNOWN-GAPS.md) and [`SECURITY.md`](SECURITY.md) before depending on it.
 
 This library has **not** undergone an independent security audit. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
@@ -138,7 +157,8 @@ This library has **not** undergone an independent security audit. See [`SECURITY
 
 ```
 src/    PostQuantum.Cryptography      — the library
-tests/  PostQuantum.Cryptography.Tests — round-trip and known-answer tests
+tests/  PostQuantum.Cryptography.Tests — round-trip, KAT, and property tests
+tools/  ComputeFingerprints           — utility for regenerating deterministic KAT fingerprints
 docs/   additional documentation
 ```
 

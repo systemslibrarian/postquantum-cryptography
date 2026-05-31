@@ -100,16 +100,32 @@ public static class XWing
     /// </summary>
     internal static byte[] Combiner(ReadOnlySpan<byte> ssM, ReadOnlySpan<byte> ssX, ReadOnlySpan<byte> ctX, ReadOnlySpan<byte> pkX)
     {
-        Span<byte> buffer = stackalloc byte[(X25519Size * 4) + 6];
-        ssM.CopyTo(buffer);
-        ssX.CopyTo(buffer[32..]);
-        ctX.CopyTo(buffer[64..]);
-        pkX.CopyTo(buffer[96..]);
-        Label.CopyTo(buffer[128..]);
-
-        byte[] sharedSecret = SHA3_256.HashData(buffer);
-        CryptographicOperations.ZeroMemory(buffer);
+        byte[] sharedSecret = new byte[SharedSecretSizeInBytes];
+        Combiner(ssM, ssX, ctX, pkX, sharedSecret);
         return sharedSecret;
+    }
+
+    /// <summary>
+    /// The X-Wing combiner: SHA3-256(ss_M || ss_X || ct_X || pk_X || XWingLabel)
+    /// written into the caller-provided <paramref name="destination"/>.
+    /// </summary>
+    internal static void Combiner(ReadOnlySpan<byte> ssM, ReadOnlySpan<byte> ssX, ReadOnlySpan<byte> ctX, ReadOnlySpan<byte> pkX, Span<byte> destination)
+    {
+        Span<byte> buffer = stackalloc byte[(X25519Size * 4) + 6];
+        try
+        {
+            ssM.CopyTo(buffer);
+            ssX.CopyTo(buffer[32..]);
+            ctX.CopyTo(buffer[64..]);
+            pkX.CopyTo(buffer[96..]);
+            Label.CopyTo(buffer[128..]);
+
+            SHA3_256.HashData(buffer, destination);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(buffer);
+        }
     }
 }
 
@@ -132,24 +148,55 @@ public sealed class XWingPublicKey
     /// </summary>
     public KemEncapsulation Encapsulate()
     {
-        using MLKem mlkem = MLKem.ImportEncapsulationKey(MLKemAlgorithm.MLKem768, _pkM);
-        mlkem.Encapsulate(out byte[] ctM, out byte[] ssM);
-
-        byte[] ekX = RandomNumberGenerator.GetBytes(XWing.X25519Size);
-        byte[] ctX = X25519.ScalarMultBase(ekX);
-        byte[] ssX = X25519.ScalarMult(ekX, _pkX);
-
-        byte[] sharedSecret = XWing.Combiner(ssM, ssX, ctX, _pkX);
-
         byte[] ciphertext = new byte[XWing.CiphertextSizeInBytes];
-        ctM.CopyTo(ciphertext, 0);
-        ctX.CopyTo(ciphertext, XWing.MLKemCiphertextSize);
-
-        CryptographicOperations.ZeroMemory(ekX);
-        CryptographicOperations.ZeroMemory(ssX);
-        CryptographicOperations.ZeroMemory(ssM);
-
+        byte[] sharedSecret = new byte[XWing.SharedSecretSizeInBytes];
+        EncapsulateCore(ciphertext, sharedSecret);
         return new KemEncapsulation(ciphertext, sharedSecret);
+    }
+
+    /// <summary>
+    /// Encapsulates a fresh random shared secret to this public key, writing the
+    /// 1120-byte ciphertext and 32-byte shared secret into the caller-provided
+    /// buffers. This overload performs no allocation on the result path.
+    /// </summary>
+    public void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
+    {
+        if (ciphertext.Length != XWing.CiphertextSizeInBytes)
+        {
+            throw new ArgumentException($"Ciphertext buffer must be {XWing.CiphertextSizeInBytes} bytes.", nameof(ciphertext));
+        }
+
+        if (sharedSecret.Length != XWing.SharedSecretSizeInBytes)
+        {
+            throw new ArgumentException($"Shared-secret buffer must be {XWing.SharedSecretSizeInBytes} bytes.", nameof(sharedSecret));
+        }
+
+        EncapsulateCore(ciphertext, sharedSecret);
+    }
+
+    private void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
+    {
+        using MLKem mlkem = MLKem.ImportEncapsulationKey(MLKemAlgorithm.MLKem768, _pkM);
+        byte[]? ekX = null;
+        byte[]? ssX = null;
+        try
+        {
+            Span<byte> ssM = stackalloc byte[MLKem768.SharedSecretSizeInBytes];
+            mlkem.Encapsulate(ciphertext[..XWing.MLKemCiphertextSize], ssM);
+            ekX = RandomNumberGenerator.GetBytes(XWing.X25519Size);
+            byte[] ctX = X25519.ScalarMultBase(ekX);
+            ssX = X25519.ScalarMult(ekX, _pkX);
+
+            ctX.CopyTo(ciphertext[XWing.MLKemCiphertextSize..]);
+            XWing.Combiner(ssM, ssX, ctX, _pkX, sharedSecret);
+
+            CryptographicOperations.ZeroMemory(ssM);
+        }
+        finally
+        {
+            if (ekX is not null) CryptographicOperations.ZeroMemory(ekX);
+            if (ssX is not null) CryptographicOperations.ZeroMemory(ssX);
+        }
     }
 
     /// <summary>
@@ -173,7 +220,7 @@ public sealed class XWingPublicKey
 /// §5.5.1 of the X-Wing specification: the 32-byte seed is expanded
 /// (<c>expandDecapsulationKey</c>) exactly once — when the key is generated or
 /// imported — and the resulting ML-KEM decapsulation key and X25519 scalar are
-/// retained in this object. Every subsequent <see cref="Decapsulate"/> reuses
+/// retained in this object. Every subsequent <see cref="Decapsulate(ReadOnlySpan{byte})"/> reuses
 /// that cached expansion instead of re-deriving it, which is the recommended
 /// pattern when one key decapsulates multiple ciphertexts.
 ///
@@ -239,6 +286,28 @@ public sealed class XWingPrivateKey : IDisposable
     /// </summary>
     public byte[] Decapsulate(ReadOnlySpan<byte> ciphertext)
     {
+        byte[] sharedSecret = new byte[XWing.SharedSecretSizeInBytes];
+        DecapsulateCore(ciphertext, sharedSecret);
+        return sharedSecret;
+    }
+
+    /// <summary>
+    /// Recovers the shared secret from <paramref name="ciphertext"/>, writing it
+    /// into the caller-provided 32-byte <paramref name="sharedSecret"/> buffer.
+    /// This overload performs no allocation on the result path.
+    /// </summary>
+    public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+    {
+        if (sharedSecret.Length != XWing.SharedSecretSizeInBytes)
+        {
+            throw new ArgumentException($"Shared-secret buffer must be {XWing.SharedSecretSizeInBytes} bytes.", nameof(sharedSecret));
+        }
+
+        DecapsulateCore(ciphertext, sharedSecret);
+    }
+
+    private void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+    {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (ciphertext.Length != XWing.CiphertextSizeInBytes)
         {
@@ -249,14 +318,18 @@ public sealed class XWingPrivateKey : IDisposable
         ReadOnlySpan<byte> ctX = ciphertext[XWing.MLKemCiphertextSize..];
 
         Span<byte> ssM = stackalloc byte[MLKem768.SharedSecretSizeInBytes];
-        _mlkem.Decapsulate(ctM, ssM);
-        byte[] ssX = X25519.ScalarMult(_skX, ctX);
-
-        byte[] sharedSecret = XWing.Combiner(ssM, ssX, ctX, _pkX);
-
-        CryptographicOperations.ZeroMemory(ssM);
-        CryptographicOperations.ZeroMemory(ssX);
-        return sharedSecret;
+        byte[]? ssX = null;
+        try
+        {
+            _mlkem.Decapsulate(ctM, ssM);
+            ssX = X25519.ScalarMult(_skX, ctX);
+            XWing.Combiner(ssM, ssX, ctX, _pkX, sharedSecret);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(ssM);
+            if (ssX is not null) CryptographicOperations.ZeroMemory(ssX);
+        }
     }
 
     /// <summary>Exports the 32-byte decapsulation key (seed).</summary>

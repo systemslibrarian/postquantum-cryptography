@@ -5,6 +5,24 @@
     <RootNamespace>PostQuantum.Cryptography</RootNamespace>
     <AssemblyName>PostQuantum.Cryptography</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <!-- PublicApiAnalyzer also tracks Internal APIs by default; we use
+         InternalsVisibleTo only for tests and do not need that ceremony.
+         RS0051/RS0056 are the internal-API equivalents of RS0016/RS0036. -->
+    <NoWarn>$(NoWarn);RS0051;RS0056</NoWarn>
+  </PropertyGroup>
+
+  <!-- Assembly identity. Keep AssemblyVersion stable across patch releases so
+       strong-name/binding-redirect consumers don't churn; bump FileVersion and
+       InformationalVersion with each release. -->
+  <PropertyGroup>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0-preview.1</InformationalVersion>
   </PropertyGroup>
 
   <!-- NuGet package metadata -->
@@ -13,21 +31,35 @@
     <PackageId>PostQuantum.Cryptography</PackageId>
     <Version>0.1.0-preview.1</Version>
     <Title>PostQuantum.Cryptography</Title>
-    <Description>Clean, high-level, secure-by-default post-quantum cryptography primitives for .NET 10. Provides easy-to-use wrappers over the native BCL implementations of ML-KEM-768 (FIPS 203) and ML-DSA-87 (FIPS 204), plus a spec-compliant X-Wing hybrid KEM (ML-KEM-768 + X25519). The foundation library for the PostQuantum.* ecosystem.</Description>
-    <PackageTags>post-quantum;pqc;cryptography;ml-kem;mlkem;kyber;ml-dsa;mldsa;dilithium;x-wing;xwing;hybrid;kem;fips-203;fips-204;security;net10</PackageTags>
+    <Description>Clean, high-level, secure-by-default post-quantum cryptography primitives for .NET 10. Provides easy-to-use wrappers over the native BCL implementations of ML-KEM (FIPS 203, all parameter sets) and ML-DSA (FIPS 204, all parameter sets), plus a spec-compliant X-Wing hybrid KEM (ML-KEM-768 + X25519). The foundation library for the PostQuantum.* ecosystem.</Description>
+    <PackageTags>post-quantum;pqc;cryptography;ml-kem;mlkem;kyber;ml-dsa;mldsa;dilithium;x-wing;xwing;hybrid;kem;fips-203;fips-204;security;net10;aot</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/systemslibrarian/postquantum-cryptography</PackageProjectUrl>
-    <PackageReleaseNotes>0.1.0-preview.1: Initial preview. ML-KEM-768, ML-DSA-87, and X-Wing hybrid KEM high-level APIs.</PackageReleaseNotes>
+    <PackageReleaseNotes>See CHANGELOG.md for release notes.</PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="\" />
     <None Include="../../LICENSE" Pack="true" PackagePath="\" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" Condition="Exists('../../THIRD-PARTY-NOTICES.md')" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="PostQuantum.Cryptography.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.11.0-beta1.24415.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
   </ItemGroup>
 
 </Project>
