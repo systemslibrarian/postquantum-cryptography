@@ -31,6 +31,20 @@ _*.log
 # BenchmarkDotNet outputs
 BenchmarkDotNet.Artifacts/
 
+# Local secrets — never commit. The release pipeline reads NUGET_API_KEY
+# from GitHub Actions secrets, not from disk.
+nuget.key
+nuget.key.*
+*.nugetkey
+.nuget.key
+.nuget.key.*
+secrets/
+*.secret
+*.pfx
+*.p12
+*.cer
+*.crt
+
 # Claude Code session / scheduler state
 .claude/
 
