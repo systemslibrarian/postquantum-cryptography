@@ -208,11 +208,11 @@ public sealed class XWingPublicKey : IDisposable
     private void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        Span<byte> ssM = stackalloc byte[MLKem768.SharedSecretSizeInBytes];
         byte[]? ekX = null;
         byte[]? ssX = null;
         try
         {
-            Span<byte> ssM = stackalloc byte[MLKem768.SharedSecretSizeInBytes];
             _mlkem.Encapsulate(ciphertext[..XWing.MLKemCiphertextSize], ssM);
             ekX = RandomNumberGenerator.GetBytes(XWing.X25519Size);
             byte[] ctX = X25519.ScalarMultBase(ekX);
@@ -220,11 +220,10 @@ public sealed class XWingPublicKey : IDisposable
 
             ctX.CopyTo(ciphertext[XWing.MLKemCiphertextSize..]);
             XWing.Combiner(ssM, ssX, ctX, _pkX, sharedSecret);
-
-            CryptographicOperations.ZeroMemory(ssM);
         }
         finally
         {
+            CryptographicOperations.ZeroMemory(ssM);
             if (ekX is not null) CryptographicOperations.ZeroMemory(ekX);
             if (ssX is not null) CryptographicOperations.ZeroMemory(ssX);
         }
@@ -311,10 +310,29 @@ public sealed class XWingPrivateKey : IDisposable
         try
         {
             MLKem mlkem = MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem768, expanded.AsSpan(0, 64));
-            byte[] skX = expanded.AsSpan(64, 32).ToArray();
-            byte[] pkX = X25519.ScalarMultBase(skX);
-            byte[] pkM = mlkem.ExportEncapsulationKey();
-            return new XWingPrivateKey(seed.ToArray(), mlkem, skX, pkM, pkX);
+            byte[]? skX = null;
+            bool success = false;
+            try
+            {
+                skX = expanded.AsSpan(64, 32).ToArray();
+                byte[] pkX = X25519.ScalarMultBase(skX);
+                byte[] pkM = mlkem.ExportEncapsulationKey();
+                var key = new XWingPrivateKey(seed.ToArray(), mlkem, skX, pkM, pkX);
+                success = true;
+                return key;
+            }
+            finally
+            {
+                if (!success)
+                {
+                    if (skX is not null)
+                    {
+                        CryptographicOperations.ZeroMemory(skX);
+                    }
+
+                    mlkem.Dispose();
+                }
+            }
         }
         finally
         {

@@ -42,8 +42,7 @@ If something important is missing from this list, that itself is a gap — pleas
 - ML-KEM / ML-DSA / X-Wing tests are gated on platform support (see above) and skip cleanly where the runtime does not expose the primitives. The X25519 tests are unconditional.
 - The robustness tests are a fast in-process property check, **not** a coverage-guided fuzzer. A dedicated fuzzing harness (e.g. SharpFuzz) is future work.
 - The deterministic-fingerprint KATs anchor wrapper integrity against the BCL's own implementation; they are **not** a substitute for a full NIST ACVP / Wycheproof interop battery.
-- Performance baselines are published in [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) along with a reproducible benchmark project (`benchmarks/PostQuantum.Cryptography.Benchmarks`).
-- The bundled `Internal/X25519.cs` currently allocates roughly nine small `long[]` work arrays per scalar-mult call (~140 KB per X-Wing encap / decap). Moving them to `stackalloc` is a tracked optimization for a future release; correctness is unaffected.
+- Performance baselines are published in [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) along with a reproducible benchmark project (`benchmarks/PostQuantum.Cryptography.Benchmarks`). The bundled X25519's working arrays are now stack-allocated, so X-Wing's per-call heap pressure is small (≤200 B on the Span overloads).
 
 ## Operational
 

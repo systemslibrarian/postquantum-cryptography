@@ -60,84 +60,87 @@ internal static class X25519
         z[31] &= 127;
         z[31] |= 64;
 
-        long[] x = new long[80];
-        Unpack25519(x, u);
-
-        long[] a = new long[16];
-        long[] b = new long[16];
-        long[] c = new long[16];
-        long[] d = new long[16];
-        long[] e = new long[16];
-        long[] f = new long[16];
-
-        for (int i = 0; i < 16; i++)
+        Span<long> x = stackalloc long[80];
+        Span<long> a = stackalloc long[16];
+        Span<long> b = stackalloc long[16];
+        Span<long> c = stackalloc long[16];
+        Span<long> d = stackalloc long[16];
+        Span<long> e = stackalloc long[16];
+        Span<long> f = stackalloc long[16];
+        Span<long> x32 = stackalloc long[16];
+        Span<long> x16 = stackalloc long[16];
+        try
         {
-            b[i] = x[i];
+            Unpack25519(x, u);
+
+            for (int i = 0; i < 16; i++)
+            {
+                b[i] = x[i];
+            }
+
+            a[0] = 1;
+            d[0] = 1;
+
+            for (int i = 254; i >= 0; i--)
+            {
+                long r = (z[i >> 3] >> (i & 7)) & 1;
+                Sel25519(a, b, r);
+                Sel25519(c, d, r);
+                Add(e, a, c);
+                Sub(a, a, c);
+                Add(c, b, d);
+                Sub(b, b, d);
+                Square(d, e);
+                Square(f, a);
+                Mul(a, c, a);
+                Mul(c, b, e);
+                Add(e, a, c);
+                Sub(a, a, c);
+                Square(b, a);
+                Sub(c, d, f);
+                Mul(a, c, _121665);
+                Add(a, a, d);
+                Mul(c, c, a);
+                Mul(a, d, f);
+                Mul(d, b, x);
+                Square(b, e);
+                Sel25519(a, b, r);
+                Sel25519(c, d, r);
+            }
+
+            for (int i = 0; i < 16; i++)
+            {
+                x[i + 16] = a[i];
+                x[i + 32] = c[i];
+                x[i + 48] = b[i];
+                x[i + 64] = d[i];
+            }
+
+            x.Slice(32, 16).CopyTo(x32);
+            x.Slice(16, 16).CopyTo(x16);
+            Inv25519(x32, x32);
+            Mul(x16, x16, x32);
+
+            byte[] result = new byte[KeySizeInBytes];
+            Pack25519(result, x16);
+            return result;
         }
-
-        a[0] = 1;
-        d[0] = 1;
-
-        for (int i = 254; i >= 0; i--)
+        finally
         {
-            long r = (z[i >> 3] >> (i & 7)) & 1;
-            Sel25519(a, b, r);
-            Sel25519(c, d, r);
-            Add(e, a, c);
-            Sub(a, a, c);
-            Add(c, b, d);
-            Sub(b, b, d);
-            Square(d, e);
-            Square(f, a);
-            Mul(a, c, a);
-            Mul(c, b, e);
-            Add(e, a, c);
-            Sub(a, a, c);
-            Square(b, a);
-            Sub(c, d, f);
-            Mul(a, c, _121665);
-            Add(a, a, d);
-            Mul(c, c, a);
-            Mul(a, d, f);
-            Mul(d, b, x);
-            Square(b, e);
-            Sel25519(a, b, r);
-            Sel25519(c, d, r);
+            CryptographicOperations.ZeroMemory(z);
+            a.Clear();
+            b.Clear();
+            c.Clear();
+            d.Clear();
+            e.Clear();
+            f.Clear();
+            x.Clear();
+            x16.Clear();
+            x32.Clear();
         }
-
-        for (int i = 0; i < 16; i++)
-        {
-            x[i + 16] = a[i];
-            x[i + 32] = c[i];
-            x[i + 48] = b[i];
-            x[i + 64] = d[i];
-        }
-
-        long[] x32 = new long[16];
-        long[] x16 = new long[16];
-        Array.Copy(x, 32, x32, 0, 16);
-        Array.Copy(x, 16, x16, 0, 16);
-        Inv25519(x32, x32);
-        Mul(x16, x16, x32);
-
-        byte[] result = new byte[KeySizeInBytes];
-        Pack25519(result, x16);
-
-        CryptographicOperations.ZeroMemory(z);
-        Array.Clear(a);
-        Array.Clear(b);
-        Array.Clear(c);
-        Array.Clear(d);
-        Array.Clear(e);
-        Array.Clear(f);
-        Array.Clear(x);
-        Array.Clear(x16);
-        Array.Clear(x32);
-
-        return result;
     }
 
-    private static void Car25519(long[] o)
+    private static void Car25519(Span<long> o)
     {
         for (int i = 0; i < 16; i++)
         {
@@ -148,7 +151,7 @@ internal static class X25519
         }
     }
 
-    private static void Sel25519(long[] p, long[] q, long b)
+    private static void Sel25519(Span<long> p, Span<long> q, long b)
     {
         long c = ~(b - 1);
         for (int i = 0; i < 16; i++)
@@ -159,37 +162,45 @@ internal static class X25519
         }
     }
 
-    private static void Pack25519(Span<byte> o, long[] n)
+    private static void Pack25519(Span<byte> o, ReadOnlySpan<long> n)
     {
-        long[] m = new long[16];
-        long[] t = new long[16];
-        Array.Copy(n, t, 16);
-        Car25519(t);
-        Car25519(t);
-        Car25519(t);
-        for (int j = 0; j < 2; j++)
+        Span<long> m = stackalloc long[16];
+        Span<long> t = stackalloc long[16];
+        try
         {
-            m[0] = t[0] - 0xffed;
-            for (int i = 1; i < 15; i++)
+            n.CopyTo(t);
+            Car25519(t);
+            Car25519(t);
+            Car25519(t);
+            for (int j = 0; j < 2; j++)
             {
-                m[i] = t[i] - 0xffff - ((m[i - 1] >> 16) & 1);
-                m[i - 1] &= 0xffff;
+                m[0] = t[0] - 0xffed;
+                for (int i = 1; i < 15; i++)
+                {
+                    m[i] = t[i] - 0xffff - ((m[i - 1] >> 16) & 1);
+                    m[i - 1] &= 0xffff;
+                }
+
+                m[15] = t[15] - 0x7fff - ((m[14] >> 16) & 1);
+                long b = (m[15] >> 16) & 1;
+                m[14] &= 0xffff;
+                Sel25519(t, m, 1 - b);
             }
 
-            m[15] = t[15] - 0x7fff - ((m[14] >> 16) & 1);
-            long b = (m[15] >> 16) & 1;
-            m[14] &= 0xffff;
-            Sel25519(t, m, 1 - b);
+            for (int i = 0; i < 16; i++)
+            {
+                o[2 * i] = (byte)(t[i] & 0xff);
+                o[(2 * i) + 1] = (byte)(t[i] >> 8);
+            }
         }
-
-        for (int i = 0; i < 16; i++)
+        finally
         {
-            o[2 * i] = (byte)(t[i] & 0xff);
-            o[(2 * i) + 1] = (byte)(t[i] >> 8);
+            m.Clear();
+            t.Clear();
         }
     }
 
-    private static void Unpack25519(long[] o, ReadOnlySpan<byte> n)
+    private static void Unpack25519(Span<long> o, ReadOnlySpan<byte> n)
     {
         for (int i = 0; i < 16; i++)
         {
@@ -199,7 +210,7 @@ internal static class X25519
         o[15] &= 0x7fff;
     }
 
-    private static void Add(long[] o, long[] a, long[] b)
+    private static void Add(Span<long> o, ReadOnlySpan<long> a, ReadOnlySpan<long> b)
     {
         for (int i = 0; i < 16; i++)
         {
@@ -207,7 +218,7 @@ internal static class X25519
         }
     }
 
-    private static void Sub(long[] o, long[] a, long[] b)
+    private static void Sub(Span<long> o, ReadOnlySpan<long> a, ReadOnlySpan<long> b)
     {
         for (int i = 0; i < 16; i++)
         {
@@ -215,46 +226,60 @@ internal static class X25519
         }
     }
 
-    private static void Mul(long[] o, long[] a, long[] b)
+    private static void Mul(Span<long> o, ReadOnlySpan<long> a, ReadOnlySpan<long> b)
     {
-        long[] t = new long[31];
-        for (int i = 0; i < 16; i++)
+        Span<long> t = stackalloc long[31];
+        try
         {
-            for (int j = 0; j < 16; j++)
+            for (int i = 0; i < 16; i++)
             {
-                t[i + j] += a[i] * b[j];
+                for (int j = 0; j < 16; j++)
+                {
+                    t[i + j] += a[i] * b[j];
+                }
             }
-        }
 
-        for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 15; i++)
+            {
+                t[i] += 38 * t[i + 16];
+            }
+
+            for (int i = 0; i < 16; i++)
+            {
+                o[i] = t[i];
+            }
+
+            Car25519(o);
+            Car25519(o);
+        }
+        finally
         {
-            t[i] += 38 * t[i + 16];
+            t.Clear();
         }
-
-        for (int i = 0; i < 16; i++)
-        {
-            o[i] = t[i];
-        }
-
-        Car25519(o);
-        Car25519(o);
     }
 
-    private static void Square(long[] o, long[] a) => Mul(o, a, a);
+    private static void Square(Span<long> o, ReadOnlySpan<long> a) => Mul(o, a, a);
 
-    private static void Inv25519(long[] o, long[] i)
+    private static void Inv25519(Span<long> o, ReadOnlySpan<long> i)
     {
-        long[] c = new long[16];
-        Array.Copy(i, c, 16);
-        for (int a = 253; a >= 0; a--)
+        Span<long> c = stackalloc long[16];
+        try
         {
-            Square(c, c);
-            if (a != 2 && a != 4)
+            i.CopyTo(c);
+            for (int a = 253; a >= 0; a--)
             {
-                Mul(c, c, i);
+                Square(c, c);
+                if (a != 2 && a != 4)
+                {
+                    Mul(c, c, i);
+                }
             }
-        }
 
-        Array.Copy(c, o, 16);
+            c.CopyTo(o);
+        }
+        finally
+        {
+            c.Clear();
+        }
     }
 }

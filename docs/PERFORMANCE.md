@@ -57,24 +57,26 @@ signature costs ~640 µs. Verify is much cheaper.
 
 | Method                   | Mean      | Allocated |
 |--------------------------|-----------|-----------|
-| GenerateKeyPair          | 1.14 ms   | 138 KB    |
-| Encapsulate (allocating) | 2.17 ms   | 274 KB    |
-| Encapsulate (Span)       | 2.28 ms   | 273 KB    |
-| Decapsulate (allocating) | 1.68 ms   | 137 KB    |
-| Decapsulate (Span)       | 1.56 ms   | 137 KB    |
+| GenerateKeyPair          | 1.48 ms   | 1693 B    |
+| Encapsulate (allocating) | 2.79 ms   | 1370 B    |
+| Encapsulate (Span)       | 2.99 ms   | **171 B** |
+| Decapsulate (allocating) | 1.53 ms   | 112 B     |
+| Decapsulate (Span)       | 1.28 ms   | **57 B**  |
 
-**Read this as:** ~460 encaps/sec or ~640 decaps/sec per core. X-Wing is
-heavier than pure ML-KEM because (a) it adds an X25519 scalar mult on each
-side, and (b) the bundled X25519 currently allocates temporary work arrays
-per call — see [Known gaps](#known-performance-gaps).
+**Read this as:** ~340 encaps/sec or ~780 decaps/sec per core. X-Wing is
+heavier than pure ML-KEM because it adds an X25519 scalar mult on each
+side, but the bundled X25519's working arrays now live on the stack
+(`stackalloc`) so per-call heap allocations are tiny — three orders of
+magnitude smaller than the byte-array-returning variants. Use the Span
+overloads in any throughput-sensitive path.
 
 ## Picking based on your workload
 
 - **TLS-style handshake throughput.** Use **`MLKem768`** if you can: ~60,000
   encaps/sec per core. Use **`XWing`** when you need hybrid security; budget
-  for an order of magnitude less throughput per core and consider keeping a
-  per-thread pool of `XWingPrivateKey` instances rather than creating one
-  per connection.
+  for an order of magnitude less throughput per core (~340 encaps/sec) and
+  keep a per-thread pool of `XWingPrivateKey` instances rather than creating
+  one per connection.
 - **Batch signing.** `MLDsa87.SignData` at ~640 µs/op means ~1,600
   signatures/sec/core. Parallelize across cores with one signer instance per
   worker thread (instances are not thread-safe).
@@ -85,16 +87,13 @@ per call — see [Known gaps](#known-performance-gaps).
   on the result side; the underlying compute time is unchanged but
   pause-time is much friendlier.
 
-## Known performance gaps
+## Known performance characteristics
 
-- **X25519 allocates work arrays.** The bundled `Internal/X25519.cs`
-  allocates roughly nine small `long[]` buffers per scalar-mult call. For
-  X-Wing that means ~140 KB managed allocations per encap / decap. Moving
-  these to `stackalloc` (the buffers are bounded — `long[80]` is 640 B) is
-  a tracked optimization for a future release. See [`KNOWN-GAPS.md`](../KNOWN-GAPS.md).
-- **No AVX-512 special-casing** in the bundled X25519. The BCL's ML-KEM /
-  ML-DSA use hardware acceleration where available; X25519 is portable
-  managed code.
+- **Bundled X25519 is portable managed code.** The Montgomery-ladder
+  working arrays now live on the stack (`stackalloc`), so X-Wing's
+  per-call heap pressure is tiny. The compute itself is portable C# with
+  no platform-specific intrinsics; the BCL's ML-KEM / ML-DSA use hardware
+  acceleration where available.
 
 ---
 

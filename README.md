@@ -242,15 +242,13 @@ Measured on Windows 11 x64 (AVX2), .NET 10.0.8, single thread, in-process. Repro
 | ML-KEM-768 | `Decapsulate` (Span)    | 26 µs     | **0 B**     |
 | ML-DSA-87 | `SignData` (Span)        | 629 µs    | **0 B**     |
 | ML-DSA-87 | `Verify`                 | 94 µs     | 0 B         |
-| X-Wing    | `Encapsulate` (Span)     | 2.3 ms    | ~273 KB †   |
-| X-Wing    | `Decapsulate` (Span)     | 1.6 ms    | ~137 KB †   |
-
-† The X-Wing allocations come from the bundled X25519 implementation's internal work arrays (~9 small `long[]` per scalar mult). Moving them to `stackalloc` is a tracked optimization for a future release.
+| X-Wing    | `Encapsulate` (Span)     | 3.0 ms    | **171 B**   |
+| X-Wing    | `Decapsulate` (Span)     | 1.3 ms    | **57 B**    |
 
 ### Picking based on your workload
 
 - **TLS-style handshakes** at maximum throughput → `MLKem768`, ~60,000 encaps/sec/core.
-- **TLS-style handshakes with hybrid security** → `XWing`, budget ~460 encaps/sec/core, keep a per-thread pool.
+- **TLS-style handshakes with hybrid security** → `XWing`, budget ~340 encaps/sec/core, keep a per-thread pool.
 - **Batch signing** → `MLDsa87`, ~1,600 signs/sec/core, parallelize across cores.
 - **High-volume verification** → `MLDsa87`, ~10,600 verifies/sec/core. Cache public keys per identity.
 
