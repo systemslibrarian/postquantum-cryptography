@@ -15,7 +15,7 @@
 
 It does not reimplement lattice cryptography. ML-KEM and ML-DSA come straight from the .NET 10 runtime; this library is the surface on top: clean naming, fixed-size byte strings, disposable key types, span-based zero-allocation overloads, honest documentation, and runnable samples for the patterns you'll actually need.
 
-> ℹ️ **Status:** preview. The public API surface is locked by `Microsoft.CodeAnalysis.PublicApiAnalyzers` and any unintentional break fails CI. See [`SECURITY.md`](SECURITY.md) for the assurance level and [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for what's deliberately not in scope.
+> ℹ️ **Status:** release candidate (`1.0.0-rc.1`) — **not independently audited.** The leading `1.0` reflects API stability, not assurance: the `-rc.1` suffix is load-bearing, and `1.0.0` will not ship until the pending external audit lands. The public API surface is locked by `Microsoft.CodeAnalysis.PublicApiAnalyzers` and any unintentional break fails CI. See [`SECURITY.md`](SECURITY.md) for the assurance level, [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for what's deliberately not in scope, and the X-Wing IETF-draft-tracking caveat below.
 
 ---
 
@@ -211,7 +211,7 @@ Same surface for ML-DSA via `MLDsaKey`.
 
 ## Security posture
 
-**This is preview software with no independent third-party audit.** Build with confidence for evaluation, prototyping, and helping your codebase move to post-quantum — but for cases where these primitives are the sole protection of high-value secrets, do your own review (and ideally fund a third-party audit; the maintainer welcomes coordination).
+**This is release-candidate software with no independent third-party audit.** Build with confidence for evaluation, prototyping, and helping your codebase move to post-quantum — but for cases where these primitives are the sole protection of high-value secrets, do your own review (and ideally fund a third-party audit; the maintainer welcomes coordination, and `1.0.0` general availability is gated on the pending external audit).
 
 What this library trusts:
 

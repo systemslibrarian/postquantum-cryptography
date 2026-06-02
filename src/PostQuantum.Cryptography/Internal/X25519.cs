@@ -3,21 +3,40 @@ using System.Security.Cryptography;
 namespace PostQuantum.Cryptography.Internal;
 
 /// <summary>
-/// Minimal, constant-time X25519 (Curve25519 Diffie-Hellman) per RFC 7748.
+/// Minimal X25519 (Curve25519 Diffie-Hellman) per RFC 7748, designed to be
+/// branch-free with respect to secret data.
 /// </summary>
 /// <remarks>
 /// .NET 10's BCL ships ML-KEM and ML-DSA natively, but does not expose X25519,
 /// which the X-Wing hybrid KEM requires. This implementation is a faithful port
 /// of the field arithmetic and Montgomery ladder from TweetNaCl
-/// (<c>crypto_scalarmult</c>), which is in the public domain. It is small,
-/// widely reviewed, and constant-time with respect to the scalar.
+/// (<c>crypto_scalarmult</c>), which is in the public domain. It is small and
+/// widely reviewed.
 ///
-/// This is the raw scalar-multiplication function from RFC 7748 (it does not
-/// abort on an all-zero / low-order output). That matches the X-Wing
-/// specification, whose combiner binds both the ciphertext and the recipient
-/// public key, so the bare function is the correct primitive here. Do not reuse
-/// this type as a general-purpose Diffie-Hellman without understanding that
-/// distinction.
+/// <b>Constant-time posture.</b> The Montgomery ladder and conditional swap
+/// (<c>Sel25519</c>) are <em>designed</em> branch-free with respect to secret
+/// data — control flow does not depend on scalar bits, and bitmask-based
+/// selection is used in place of conditional moves. This is a source-level
+/// guarantee only. It has <b>not</b> been validated under the .NET JIT,
+/// tiered compilation, or speculative execution, and it has <b>not</b> been
+/// independently audited for microarchitectural side channels (cache,
+/// branch-predictor, port-contention, prefetch). Treat it as
+/// "constant-time-by-construction, not constant-time-by-measurement", and
+/// see <c>AUDIT-SCOPE.md</c>.
+///
+/// <b>Raw RFC 7748 primitive — safe only inside X-Wing.</b> This is the raw
+/// scalar-multiplication function from RFC 7748. It does <em>not</em> abort
+/// on an all-zero / low-order output, and it accepts non-canonical
+/// u-coordinates (the high bit of <paramref>u</paramref> is masked per the
+/// RFC). That is correct for X-Wing, whose combiner cryptographically binds
+/// <c>ct_X</c> and <c>pk_X</c> into the derived shared secret, so the bare
+/// function is the right primitive here. <b>Do not reuse this type as a
+/// general-purpose Diffie-Hellman.</b> Outside of X-Wing those properties
+/// would be footguns: an attacker-controlled low-order point would yield a
+/// predictable shared secret, and non-canonical encodings would create
+/// cross-implementation interop risk. The type is <c>internal</c> for that
+/// reason and exposed to the test project only via
+/// <c>InternalsVisibleTo</c>.
 /// </remarks>
 internal static class X25519
 {

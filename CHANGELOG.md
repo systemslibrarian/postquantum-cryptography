@@ -7,6 +7,91 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] — 2026-06-01
+
+First release candidate of the `1.0` line. **Version-only** bump as part
+of the suite-wide version reconciliation — no crypto logic or public-API
+changes in this commit. `1.0.0` general availability is **gated on a
+pending independent third-party audit**; until that audit lands and is
+addressed, this package ships only under the `-rc.N` suffix.
+
+### Changed
+
+- **Package version** bumped to `1.0.0-rc.1` (from `0.2.0-preview.1`).
+  This package is the suite anchor — the version is moving up so that
+  nothing in the `PostQuantum.*` suite advertises more maturity than it.
+- **`AssemblyVersion` / `FileVersion`** bumped to `1.0.0.0`;
+  `InformationalVersion` to `1.0.0-rc.1`.
+- **README assurance language** updated from "preview" to
+  "release candidate (`1.0.0-rc.1`) — not independently audited",
+  making the rc maturity caveat and the audit-gated path to `1.0.0`
+  visible in the README at HEAD (the dynamic NuGet badges only update
+  post-publish). The X-Wing IETF-draft wire-format policy callout is
+  unchanged.
+- **`SmokeTestPackageVersion`** default in
+  `tests/PostQuantum.Cryptography.SmokeTest` aligned to `1.0.0-rc.1` so
+  the consumer smoke test exercises the version this repo now ships.
+- **Public API entries promoted** from `PublicAPI.Unshipped.txt` to
+  `PublicAPI.Shipped.txt` for the rc — pure text-file bookkeeping; no
+  symbol additions, removals, or signature changes. The promoted set is
+  the convenience layer (`MlKemOperations`, `MLDsaOperations`,
+  `XWingHybridKem`, `PqKeyPair<TPublic, TPrivate>`) plus
+  `XWingPublicKey.Dispose()`, `KemEncapsulation.ToString()` override,
+  and the `PqKeyPair` constructors / operators / `Deconstruct` /
+  `Equals` / `GetHashCode` already present in the codebase since
+  `0.2.0-preview.1`.
+
+### Added (audit remediation, not API change)
+
+- **`X25519AdversarialKatTests`** — non-canonical u-coordinate handling
+  (high bit set, values ≥ 2²⁵⁵−19), the 8 standard low-order points,
+  and a `[Trait("Category","LongRunning")]`-gated 1,000,000-iteration
+  RFC 7748 §5.2 chain. The 1M chain is excluded from the default test
+  run; everything else runs on every push.
+- **`X25519DifferentialTests`** — byte-for-byte cross-check of
+  `ScalarMult` / `ScalarMultBase` against
+  `Org.BouncyCastle.Math.EC.Rfc7748.X25519` over the RFC 7748 vectors
+  and randomized inputs. BouncyCastle is a **test-only** package
+  reference on `PostQuantum.Cryptography.Tests`; the library's own
+  dependency graph is unchanged.
+- **`XWingCombinerKatTests`** — fixed 134-byte input → exact
+  SHA3-256(32) output for the internal `XWing.Combiner`, plus the
+  `expandDecapsulationKey` SHAKE256(seed, 96) split into ML-KEM seed +
+  X25519 scalar exercised standalone.
+- **`AUDIT-SCOPE.md`** — concise external-reviewer brief covering the
+  X-Wing combiner / key expansion / encoding vs
+  `draft-connolly-cfrg-xwing-kem`, the bundled X25519 vs RFC 7748,
+  JIT / tiered-compilation constant-time review, a KAT coverage
+  matrix, and the deliberately-uncovered paths (non-canonical u,
+  low-order points, microarchitectural side channels, derandomized
+  X-Wing encapsulation).
+
+### Documentation
+
+- **`X25519` `<remarks>`** softened from a flat "constant-time" claim
+  to "designed branch-free w.r.t. secret data; not validated under the
+  .NET JIT / tiered compilation". The "raw RFC 7748 primitive — safe
+  only inside X-Wing" contract is made explicit on the type.
+- **`KNOWN-GAPS.md`** extended with two new bullets under
+  "Cryptographic caveats": the JIT-not-validated constant-time caveat,
+  and the "raw X25519 accepts non-canonical u and does not reject
+  low-order points" contract.
+- **`SECURITY.md`** mirrors the JIT constant-time caveat.
+
+### Not changed
+
+- No `<PackageReference>` to other `PostQuantum.*` packages exists in
+  this repo (this is the foundation package; the suite depends on it,
+  not the other way around), so no inter-package version constraints
+  were re-pinned.
+- **Crypto logic is untouched.** The X25519 field arithmetic
+  (`Internal/X25519.cs`) and the X-Wing combiner (`XWing.cs`) are
+  bit-for-bit identical to `0.2.0-preview.1`. The remediation work is
+  evidence (new KATs / differential harness) and honest documentation,
+  not code edits to the verified-correct primitives.
+- `Microsoft.CodeAnalysis.PublicApiAnalyzers` remains wired in the
+  `.csproj`.
+
 ## [0.2.0-preview.1] — 2026-05-31
 
 The first preview of the `0.2.x` line. Consolidates the API and engineering
@@ -298,7 +383,8 @@ Initial preview.
 
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, current list.
 
-[Unreleased]: https://github.com/systemslibrarian/postquantum-cryptography/compare/v0.1.0-preview.1...HEAD
+[Unreleased]: https://github.com/systemslibrarian/postquantum-cryptography/compare/v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v1.0.0-rc.1
 [0.1.0-preview.1]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v0.1.0-preview.1
 
 ---

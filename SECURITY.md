@@ -2,7 +2,7 @@
 
 ## Status and assurance level
 
-`PostQuantum.Cryptography` is **preview software** (`0.2.x` line). It is built to a high standard and tested, but it has **not** undergone an independent third-party security audit. Treat it accordingly: it is suitable for evaluation, prototyping, and helping the .NET ecosystem move toward post-quantum cryptography — not yet as the sole protection for high-value production secrets without your own review.
+`PostQuantum.Cryptography` is **release-candidate software** (`1.0.x` line, currently at `1.0.0-rc.1`). It is built to a high standard and tested, but it has **not** undergone an independent third-party security audit. Treat it accordingly: it is suitable for evaluation, prototyping, and helping the .NET ecosystem move toward post-quantum cryptography — not yet as the sole protection for high-value production secrets without your own review. **General availability as `1.0.0` is gated on the pending external audit.** The leading `1.0` reflects API stability; the `-rc.N` suffix carries the assurance caveat, and the [`AUDIT-SCOPE.md`](AUDIT-SCOPE.md) brief enumerates exactly what an external reviewer should focus on.
 
 ## What this library trusts
 
@@ -40,7 +40,7 @@ Static facades (`MLKem768.GenerateKeyPair()`, `MLDsa87.ImportPrivateSeed(...)`, 
 
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, up-to-date list. Highlights:
 
-- The bundled X25519 is constant-time in its core ladder but has **not** been independently audited for microarchitectural side channels.
+- The bundled X25519 is **designed branch-free** in its core ladder and conditional swap with respect to secret data, but that guarantee is **source-level only** — it has **not** been validated under the .NET JIT, tiered compilation, or speculative execution, and has **not** been independently audited for microarchitectural side channels (cache, branch-predictor, port-contention, prefetch). Listed as a first-order item in [`AUDIT-SCOPE.md`](AUDIT-SCOPE.md).
 - No FIPS 140-3 validation is claimed for this wrapper. The underlying BCL primitives' validation status is the platform's matter.
 - The API surface is intentionally small. Encrypted PKCS#8 (password-protected private keys) is not yet wrapped, and X-Wing keys are exchanged as their raw fixed-size byte strings only.
 
@@ -79,14 +79,16 @@ We're happy to credit you in the advisory and release notes — let us know how 
 
 ## Supported versions
 
-| Version line     | Status   | Receives security fixes?                                |
-| ---------------- | -------- | ------------------------------------------------------- |
-| `0.2.x` (preview, current) | Active   | Latest release only                           |
-| `0.1.x` (preview, earlier) | Superseded | No — upgrade to `0.2.x`                      |
-| `1.x` and later  | _t.b.d._ | The two most recent minor releases of the current major |
+| Version line                    | Status     | Receives security fixes?                                |
+| ------------------------------- | ---------- | ------------------------------------------------------- |
+| `1.0.x-rc.N` (release candidate, current) | Active     | Latest rc only                                |
+| `0.2.x` (preview, earlier)      | Superseded | No — upgrade to `1.0.0-rc.N`                            |
+| `0.1.x` (preview, earlier)      | Superseded | No — upgrade to `1.0.0-rc.N`                            |
+| `1.0.x` GA and later (post-audit) | _t.b.d._ | The two most recent minor releases of the current major |
 
-When `1.0` ships, this table will be updated with a concrete policy. While we are
-in `0.x` preview, only the most recent release receives backported fixes.
+While we are in `1.0.x-rc` only the latest rc receives backported fixes.
+When `1.0.0` GA ships (after the pending external audit), this table will
+be updated with the concrete post-GA policy.
 
 ---
 

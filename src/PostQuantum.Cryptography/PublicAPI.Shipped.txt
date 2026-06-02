@@ -1,5 +1,10 @@
 #nullable enable
+~PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Equals(PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate> other) -> bool
 ~override PostQuantum.Cryptography.KemEncapsulation.Equals(object obj) -> bool
+~override PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Equals(object obj) -> bool
+~override PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.ToString() -> string
+~static PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.operator !=(PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate> left, PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate> right) -> bool
+~static PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.operator ==(PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate> left, PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate> right) -> bool
 const PostQuantum.Cryptography.MLDsa44.PrivateSeedSizeInBytes = 32 -> int
 const PostQuantum.Cryptography.MLDsa44.PublicKeySizeInBytes = 1312 -> int
 const PostQuantum.Cryptography.MLDsa44.SecretKeySizeInBytes = 2560 -> int
@@ -31,7 +36,13 @@ const PostQuantum.Cryptography.XWing.CiphertextSizeInBytes = 1120 -> int
 const PostQuantum.Cryptography.XWing.DecapsulationKeySizeInBytes = 32 -> int
 const PostQuantum.Cryptography.XWing.EncapsulationKeySizeInBytes = 1216 -> int
 const PostQuantum.Cryptography.XWing.SharedSecretSizeInBytes = 32 -> int
+const PostQuantum.Cryptography.XWingHybridKem.CiphertextSizeInBytes = 1120 -> int
+const PostQuantum.Cryptography.XWingHybridKem.DecapsulationKeySizeInBytes = 32 -> int
+const PostQuantum.Cryptography.XWingHybridKem.EncapsulationKeySizeInBytes = 1216 -> int
+const PostQuantum.Cryptography.XWingHybridKem.SharedSecretSizeInBytes = 32 -> int
 override PostQuantum.Cryptography.KemEncapsulation.GetHashCode() -> int
+override PostQuantum.Cryptography.KemEncapsulation.ToString() -> string!
+override PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.GetHashCode() -> int
 PostQuantum.Cryptography.KemEncapsulation
 PostQuantum.Cryptography.KemEncapsulation.Ciphertext.get -> byte[]!
 PostQuantum.Cryptography.KemEncapsulation.Ciphertext.init -> void
@@ -45,6 +56,7 @@ PostQuantum.Cryptography.MLDsa44
 PostQuantum.Cryptography.MLDsa65
 PostQuantum.Cryptography.MLDsa87
 PostQuantum.Cryptography.MLDsaKey
+PostQuantum.Cryptography.MLDsaOperations
 PostQuantum.Cryptography.MLDsaPrivateKey
 PostQuantum.Cryptography.MLDsaPrivateKey.Algorithm.get -> System.Security.Cryptography.MLDsaAlgorithm!
 PostQuantum.Cryptography.MLDsaPrivateKey.Dispose() -> void
@@ -93,7 +105,17 @@ PostQuantum.Cryptography.MLKemPublicKey.Encapsulate(System.Span<byte> ciphertext
 PostQuantum.Cryptography.MLKemPublicKey.Export() -> byte[]!
 PostQuantum.Cryptography.MLKemPublicKey.ExportSubjectPublicKeyInfo() -> byte[]!
 PostQuantum.Cryptography.MLKemPublicKey.ExportSubjectPublicKeyInfoPem() -> string!
+PostQuantum.Cryptography.MlKemOperations
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Deconstruct(out TPublic! Public, out TPrivate! Private) -> void
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.PqKeyPair() -> void
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.PqKeyPair(TPublic! Public, TPrivate! Private) -> void
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Private.get -> TPrivate!
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Private.init -> void
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Public.get -> TPublic!
+PostQuantum.Cryptography.PqKeyPair<TPublic, TPrivate>.Public.init -> void
 PostQuantum.Cryptography.XWing
+PostQuantum.Cryptography.XWingHybridKem
 PostQuantum.Cryptography.XWingPrivateKey
 PostQuantum.Cryptography.XWingPrivateKey.Decapsulate(System.ReadOnlySpan<byte> ciphertext) -> byte[]!
 PostQuantum.Cryptography.XWingPrivateKey.Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) -> void
@@ -102,6 +124,7 @@ PostQuantum.Cryptography.XWingPrivateKey.ExportDecapsulationKey() -> byte[]!
 PostQuantum.Cryptography.XWingPrivateKey.ExportEncapsulationKey() -> byte[]!
 PostQuantum.Cryptography.XWingPrivateKey.GetPublicKey() -> PostQuantum.Cryptography.XWingPublicKey!
 PostQuantum.Cryptography.XWingPublicKey
+PostQuantum.Cryptography.XWingPublicKey.Dispose() -> void
 PostQuantum.Cryptography.XWingPublicKey.Encapsulate() -> PostQuantum.Cryptography.KemEncapsulation
 PostQuantum.Cryptography.XWingPublicKey.Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) -> void
 PostQuantum.Cryptography.XWingPublicKey.Export() -> byte[]!
@@ -126,6 +149,11 @@ static PostQuantum.Cryptography.MLDsaKey.ImportPkcs8PrivateKey(System.ReadOnlySp
 static PostQuantum.Cryptography.MLDsaKey.ImportPrivateKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLDsaPrivateKey!
 static PostQuantum.Cryptography.MLDsaKey.ImportPublicKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLDsaPublicKey!
 static PostQuantum.Cryptography.MLDsaKey.ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLDsaPublicKey!
+static PostQuantum.Cryptography.MLDsaOperations.GenerateKeyPair(System.Security.Cryptography.MLDsaAlgorithm! algorithm) -> (byte[]! PublicKey, byte[]! PrivateSeed)
+static PostQuantum.Cryptography.MLDsaOperations.SignData(System.Security.Cryptography.MLDsaAlgorithm! algorithm, System.ReadOnlySpan<byte> privateSeed, System.ReadOnlySpan<byte> data) -> byte[]!
+static PostQuantum.Cryptography.MLDsaOperations.SignData(System.Security.Cryptography.MLDsaAlgorithm! algorithm, System.ReadOnlySpan<byte> privateSeed, System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context) -> byte[]!
+static PostQuantum.Cryptography.MLDsaOperations.VerifyData(System.Security.Cryptography.MLDsaAlgorithm! algorithm, System.ReadOnlySpan<byte> publicKey, System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) -> bool
+static PostQuantum.Cryptography.MLDsaOperations.VerifyData(System.Security.Cryptography.MLDsaAlgorithm! algorithm, System.ReadOnlySpan<byte> publicKey, System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature, System.ReadOnlySpan<byte> context) -> bool
 static PostQuantum.Cryptography.MLKem1024.GenerateKeyPair() -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKem1024.ImportDecapsulationKey(System.ReadOnlySpan<byte> decapsulationKey) -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKem1024.ImportEncapsulationKey(System.ReadOnlySpan<byte> encapsulationKey) -> PostQuantum.Cryptography.MLKemPublicKey!
@@ -145,7 +173,15 @@ static PostQuantum.Cryptography.MLKemKey.ImportPkcs8PrivateKey(System.ReadOnlySp
 static PostQuantum.Cryptography.MLKemKey.ImportPrivateKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKemKey.ImportPublicKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLKemPublicKey!
 static PostQuantum.Cryptography.MLKemKey.ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLKemPublicKey!
+static PostQuantum.Cryptography.MlKemOperations.Decapsulate(System.Security.Cryptography.MLKemAlgorithm! algorithm, System.ReadOnlySpan<byte> decapsulationKey, System.ReadOnlySpan<byte> ciphertext) -> byte[]!
+static PostQuantum.Cryptography.MlKemOperations.DecapsulateFromSeed(System.Security.Cryptography.MLKemAlgorithm! algorithm, System.ReadOnlySpan<byte> privateSeed, System.ReadOnlySpan<byte> ciphertext) -> byte[]!
+static PostQuantum.Cryptography.MlKemOperations.Encapsulate(System.Security.Cryptography.MLKemAlgorithm! algorithm, System.ReadOnlySpan<byte> encapsulationKey) -> PostQuantum.Cryptography.KemEncapsulation
+static PostQuantum.Cryptography.MlKemOperations.GenerateKeyPair(System.Security.Cryptography.MLKemAlgorithm! algorithm) -> (byte[]! EncapsulationKey, byte[]! PrivateSeed)
 static PostQuantum.Cryptography.XWing.GenerateKeyPair() -> PostQuantum.Cryptography.XWingPrivateKey!
 static PostQuantum.Cryptography.XWing.ImportDecapsulationKey(System.ReadOnlySpan<byte> decapsulationKey) -> PostQuantum.Cryptography.XWingPrivateKey!
 static PostQuantum.Cryptography.XWing.ImportEncapsulationKey(System.ReadOnlySpan<byte> encapsulationKey) -> PostQuantum.Cryptography.XWingPublicKey!
 static PostQuantum.Cryptography.XWing.IsSupported.get -> bool
+static PostQuantum.Cryptography.XWingHybridKem.Decapsulate(System.ReadOnlySpan<byte> decapsulationKey, System.ReadOnlySpan<byte> ciphertext) -> byte[]!
+static PostQuantum.Cryptography.XWingHybridKem.Encapsulate(System.ReadOnlySpan<byte> encapsulationKey) -> PostQuantum.Cryptography.KemEncapsulation
+static PostQuantum.Cryptography.XWingHybridKem.GenerateKeyPair() -> (byte[]! EncapsulationKey, byte[]! DecapsulationKey)
+static PostQuantum.Cryptography.XWingHybridKem.IsSupported.get -> bool
