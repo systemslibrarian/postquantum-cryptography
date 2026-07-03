@@ -56,6 +56,18 @@ public class X25519TimingLeakTests
 
         byte[] randomScalar = new byte[32];
 
+        // ONE input buffer used for every measured call, whichever class the
+        // iteration belongs to — same address, same cache lines. And the
+        // per-iteration preparation below is IDENTICAL for both classes
+        // (always draw fresh randomness, always copy 32 bytes); only the
+        // copied VALUE differs. Any class-correlated difference in the work
+        // done before the timer starts — e.g. calling the CSPRNG only on
+        // random-class iterations — shows up as a systematic timing bias
+        // that the t-test happily reports as a "leak" (observed at t≈13 on
+        // Ubuntu CI runners with an earlier, asymmetric version of this
+        // loop, while the same library code passed on Windows).
+        byte[] scalar = new byte[32];
+
         // Warm-up: get ScalarMult to its final JIT tier before measuring.
         for (int i = 0; i < WarmupIterations; i++)
         {
@@ -82,15 +94,15 @@ public class X25519TimingLeakTests
                 pickFixed = true;
             }
 
-            byte[] scalar;
+            // Identical preparation for both classes (see comment above).
+            RandomNumberGenerator.Fill(randomScalar);
             if (pickFixed)
             {
-                scalar = fixedScalar;
+                fixedScalar.CopyTo(scalar, 0);
             }
             else
             {
-                RandomNumberGenerator.Fill(randomScalar);
-                scalar = randomScalar;
+                randomScalar.CopyTo(scalar, 0);
             }
 
             long start = Stopwatch.GetTimestamp();
