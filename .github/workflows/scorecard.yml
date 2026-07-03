@@ -1,0 +1,45 @@
+name: OpenSSF Scorecard
+
+# Supply-chain security posture analysis (https://securityscorecards.dev).
+# Runs weekly and on pushes to main; results publish to the repository's
+# code-scanning dashboard and to the public OpenSSF REST API, which powers
+# the Scorecard badge.
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: '30 3 * * 1' # Mondays 03:30 UTC
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to upload results to the code-scanning dashboard.
+      security-events: write
+      # Needed to publish results for the badge / REST API.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard analysis
+        uses: ossf/scorecard-action@v2.4.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Publish to the OpenSSF REST API so the badge works:
+          # https://api.securityscorecards.dev/projects/github.com/systemslibrarian/postquantum-cryptography
+          publish_results: true
+
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif

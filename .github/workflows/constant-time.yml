@@ -1,0 +1,109 @@
+name: Constant-time evidence
+
+# Produces the two pieces of measured constant-time evidence for the bundled
+# X25519 (the top item in AUDIT-SCOPE.md §3):
+#
+#   1. timing-dudect — the dudect-style fixed-vs-random Welch t-test
+#      (X25519TimingLeakTests). A pass means "no timing dependence on the
+#      scalar value detectable at this sample size on this runner".
+#   2. jit-disasm — captures the final-tier native disassembly the JIT
+#      actually emits for the X25519 methods, as an artifact for human
+#      review (secret-dependent branches / memory access). Loop branches on
+#      the public 255-iteration ladder counter are expected and fine.
+#
+# This is evidence, not proof: it does not cover other microarchitectures,
+# cache/port-contention channels, or speculative execution.
+#
+# Monthly schedule: the emitted code changes with .NET SDK servicing updates,
+# so the evidence is re-taken even when this repo's source hasn't changed.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/PostQuantum.Cryptography/Internal/X25519.cs'
+      - 'tests/PostQuantum.Cryptography.Tests/X25519TimingLeakTests.cs'
+      - 'tools/X25519JitDisasm/**'
+      - '.github/workflows/constant-time.yml'
+  schedule:
+    - cron: '0 4 3 * *' # 3rd of each month, 04:00 UTC
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  timing-dudect:
+    name: Timing leak test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run dudect-style timing test
+        run: dotnet test tests/PostQuantum.Cryptography.Tests/PostQuantum.Cryptography.Tests.csproj -c Release --filter "FullyQualifiedName~X25519TimingLeakTests"
+
+  jit-disasm:
+    name: JIT disassembly capture (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Build WITHOUT the JitDisasm env vars so MSBuild/Roslyn don't spew
+      # disassembly of themselves; only the harness run is instrumented.
+      - name: Build harness
+        run: dotnet build tools/X25519JitDisasm/X25519JitDisasm.csproj -c Release
+
+      - name: Capture X25519 disassembly
+        env:
+          DOTNET_TieredCompilation: '0'
+          DOTNET_ReadyToRun: '0'
+          # Method-name matching (class-qualified patterns do not match on
+          # this runtime). This is the complete method set of
+          # Internal/X25519.cs; the capture is verified below to contain all
+          # ten so a silent rename can't shrink coverage.
+          DOTNET_JitDisasm: 'ScalarMult ScalarMultBase Sel25519 Car25519 Unpack25519 Pack25519 Inv25519 Mul Add Sub'
+        run: |
+          set -euo pipefail
+          dotnet run --project tools/X25519JitDisasm -c Release --no-build \
+            > "x25519-jit-disasm-${{ matrix.os }}.asm" 2>&1
+          # The harness self-checks the RFC 7748 vectors (non-zero exit on
+          # mismatch), so a captured listing always corresponds to a correct
+          # compilation.
+          grep -q "RFC 7748 vectors: OK" "x25519-jit-disasm-${{ matrix.os }}.asm"
+          listings=$(grep -c "Assembly listing for method PostQuantum.Cryptography.Internal.X25519:" "x25519-jit-disasm-${{ matrix.os }}.asm")
+          echo "captured $listings X25519 method listings"
+          if [ "$listings" -lt 10 ]; then
+            echo "::error::Expected 10 X25519 method listings, got $listings — the JitDisasm filter no longer matches the source."
+            exit 1
+          fi
+
+      - name: Upload disassembly artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: x25519-jit-disasm-${{ matrix.os }}
+          path: x25519-jit-disasm-*.asm

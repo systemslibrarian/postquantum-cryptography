@@ -31,7 +31,7 @@ authoritative; this file is just a routing aid for an auditor.
 - A faithful port of TweetNaCl's `crypto_scalarmult` (public domain). Signed `long` limbs that go negative through `Sub` / `Sel25519` / `Car25519` / `Pack25519` / `Mul` / `Inv25519`. **This has been read line-by-line and confirmed bounds-safe; the recommendation is to verify against an independent reference rather than re-audit the carry chain in isolation.**
 - Scalar clamping per RFC 7748 §5 (`z[0] &= 248; z[31] &= 127; z[31] |= 64`).
 - `Unpack25519` high-bit mask of `u` (`o[15] &= 0x7fff`) — the bare primitive accepts non-canonical u.
-- The Montgomery ladder and `Sel25519` are designed branch-free w.r.t. secret data (bitmask selection, no scalar-dependent control flow); auditor should treat the "constant-time" claim as **by-construction, not by-measurement** (see §3).
+- The Montgomery ladder and `Sel25519` are designed branch-free w.r.t. secret data (bitmask selection, no scalar-dependent control flow); first-party measured evidence exists but is limited (see §3) — auditor should treat the "constant-time" claim as **by-construction plus first-party measurement, not independently verified**.
 - Stack-allocation discipline: all working arrays are `stackalloc`'d and `.Clear()`'d in `finally`; the scalar `z` is `ZeroMemory`'d.
 
 ### 3. Constant-time review under the .NET JIT / tiered compilation
@@ -39,8 +39,11 @@ authoritative; this file is just a routing aid for an auditor.
 This is the first-order audit item that cannot be settled by source reading.
 
 - Confirm or refute that tiered compilation, code-gen optimizations, and speculative execution **do not** introduce scalar-dependent branches or scalar-dependent memory access patterns in the produced machine code (R2R, tier-0, tier-1) for `X25519.ScalarMult`, `X25519.Sel25519`, and the inner field ops.
-- Recommended tooling: `ctgrind`-style Valgrind taint analysis on a native AOT build of the library; `dudect` measurement of `ScalarMult` over equal-class inputs; manual review of the JIT'd assembly for `Sel25519`.
-- Cache, branch-predictor, port-contention, and prefetch side channels are explicitly **in scope** for the auditor — they are listed as known gaps in `KNOWN-GAPS.md` and have not been measured.
+- **First-party evidence already on file** (produced by the `constant-time.yml` workflow; treat as a starting point, not a substitute for independent verification):
+  - a dudect-style fixed-vs-random Welch t-test on `ScalarMult` (`X25519TimingLeakTests`; interleaved classes, 90th-percentile cropping, |t| &lt; 10 assertion), run on Linux and Windows GitHub-hosted runners;
+  - per-run captures of the final-tier JIT disassembly of all ten `X25519` methods (`tools/X25519JitDisasm`, `DOTNET_JitDisasm` with `DOTNET_TieredCompilation=0`), archived as workflow artifacts for review.
+- Recommended additional tooling: `ctgrind`-style Valgrind taint analysis on a native AOT build of the library; higher-sample `dudect` runs on bare metal; manual review of the archived assembly for `Sel25519`.
+- Cache, branch-predictor, port-contention, and prefetch side channels are explicitly **in scope** for the auditor — they are listed as known gaps in `KNOWN-GAPS.md` and have not been measured (the timing test above only covers end-to-end wall-clock timing).
 
 ### 4. Wrapper-boundary fail-closed behavior
 
@@ -73,6 +76,13 @@ inputs.
 | X25519 low-order points                         | The 7 curve-side small-subgroup u-coordinates from libsodium's `has_small_order` blacklist (u ∈ {0, 1, the two order-8 points, p−1, p, p+1}); clamped scalarmult yields all-zero | `X25519AdversarialKatTests`               | yes         |
 | X25519 differential                             | RFC 7748 vectors + randomized inputs cross-checked vs `Org.BouncyCastle.Math.EC.Rfc7748.X25519`  | `X25519DifferentialTests`                 | yes         |
 | X25519 DH commutativity property                | 64 random keys                                                                                   | `X25519PropertyTests`                     | yes         |
+| X25519 Wycheproof sweep                         | Full C2SP/wycheproof x25519 set (518 vectors: twist, low-order, non-canonical, arithmetic edge cases), exact expected shared secrets | `WycheproofX25519Tests`                   | yes         |
+| X25519 timing (dudect-style)                    | Fixed-vs-random scalar classes, interleaved, 90th-percentile crop, Welch t &lt; 10               | `X25519TimingLeakTests`                   | gated `[Trait("Category","LongRunning")]`; run by `constant-time.yml` |
+| X25519 JIT disassembly                          | Final-tier native code of all 10 methods captured per run                                        | `tools/X25519JitDisasm` + `constant-time.yml` | artifact, human-reviewed |
+| ML-KEM ACVP keyGen                              | NIST ACVP-Server gen-val: (d, z) → ek/dk, 10 cases × 3 parameter sets                            | `AcvpMlKemKatTests`                       | yes         |
+| ML-KEM ACVP decapsulation (VAL)                 | dk + c → k, incl. implicit-rejection cases, 10 × 3 parameter sets                                | `AcvpMlKemKatTests`                       | yes         |
+| ML-DSA ACVP keyGen                              | seed → pk/sk, 10 cases × 3 parameter sets                                                        | `AcvpMlDsaKatTests`                       | yes         |
+| ML-DSA ACVP sigVer                              | external/pure interface with contexts, valid + tampered negatives, 15 × 3 parameter sets         | `AcvpMlDsaKatTests`                       | yes         |
 | X-Wing combiner                                 | Fixed 134-byte input → exact SHA3-256(32) output                                                  | `XWingCombinerKatTests`                   | yes         |
 | X-Wing `expandDecapsulationKey`                 | SHAKE256(seed, 96) split (d ‖ z ‖ skX) standalone                                                | `XWingCombinerKatTests`                   | yes         |
 | X-Wing end-to-end key generation                | `draft-connolly-cfrg-xwing-kem` Appendix C: seed → encapsulation key                              | `XWingTests.Kat_KeyGeneration_*`          | yes         |
@@ -85,11 +95,11 @@ inputs.
 
 These are deliberately uncovered and are the auditor's responsibility:
 
-- **Microarchitectural side-channel measurement** of the bundled X25519 under the .NET JIT (cache, branch-predictor, port-contention, prefetch, speculative execution). The CI suite proves *functional* constant-time-by-construction; it cannot prove *physical* constant-time.
+- **Microarchitectural side-channel measurement** of the bundled X25519 (cache, branch-predictor, port-contention, prefetch, speculative execution). The dudect-style lane measures end-to-end wall-clock timing only; the finer channels remain unmeasured.
 - **Derandomized X-Wing encapsulation.** `EncapsulateDerand` is a testing aid in the draft and is intentionally not part of the public API; consequently the bundled KATs cover key generation and decapsulation but not derandomized encap. An auditor with access to the draft's full vector set can cross-check by adapting our internal `Encapsulate` against the derandomized path.
 - **Cross-implementation X-Wing interop** beyond the IETF draft Appendix C vectors. The draft is not yet an RFC; if another implementation diverges on encoding, our package will rev its major version (per the wire-format policy in `README.md`).
 - **Long-running differential** of X25519 against multiple independent references (`libsodium`, `monocypher`, `BoringSSL`). The default suite cross-checks BouncyCastle only.
-- **Twist-side low-order points.** The all-zero clamped-scalarmult property does not hold on the twist; testing those requires a separate "invalid curve" framing and is out of scope for the per-push KAT suite. Auditor may exercise the twist-side cases if invalid-curve attacks against X-Wing's `pk_X` are within the engagement.
+- **Twist-side behavior beyond functional correctness.** The Wycheproof sweep now exercises 221 twist-point vectors (including low-order) with exact expected outputs, so *functional* twist handling is covered per-push. What remains for the auditor is the *attack framing*: whether invalid-curve/twist inputs to X-Wing's `pk_X` enable anything beyond what the combiner's binding already neutralizes.
 
 ## Reporting
 

@@ -7,6 +7,70 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **Encrypted PKCS#8 (password-protected private keys)** for ML-KEM and
+  ML-DSA: `ExportEncryptedPkcs8PrivateKey[Pem](password)` on the
+  private-key types and `ImportEncryptedPkcs8PrivateKey` /
+  `ImportEncryptedPrivateKeyFromPem` on `MLKemKey` / `MLDsaKey`.
+  Secure-by-default: fixed PBE policy (PBES2, PBKDF2-HMAC-SHA256 at
+  600,000 iterations, AES-256-CBC), empty passwords refused on export,
+  PEM labels disambiguated up front (encrypted vs unencrypted vs
+  public) with clear `ArgumentException`s in both mistaken directions.
+  New public API recorded in `PublicAPI.Unshipped.txt`; the DER-level
+  PBE algorithm identifiers are locked in by test.
+- **Project Wycheproof x25519 sweep** (`WycheproofX25519Tests`): the
+  full 518-vector adversarial set (twist points, low-order points,
+  non-canonical u, arithmetic edge cases) asserted to exact expected
+  shared secrets on every push. Vector file vendored with provenance
+  under `tests/.../TestData/`.
+- **NIST ACVP known-answer tests** (`AcvpMlKemKatTests`,
+  `AcvpMlDsaKatTests`): curated subsets from `usnistgov/ACVP-Server`
+  gen-val — ML-KEM keyGen (d‖z → ek/dk) and decapsulation VAL cases
+  including implicit rejection; ML-DSA keyGen (seed → pk/sk) and
+  sigVer (external/pure, with FIPS 204 contexts and tamper negatives) —
+  across all six parameter sets. Provenance (upstream commit,
+  retrieval date) recorded in each vector file.
+- **Measured constant-time evidence for the bundled X25519**:
+  a dudect-style fixed-vs-random Welch t-test on `ScalarMult`
+  (`X25519TimingLeakTests`, gated `Category=LongRunning`) and a
+  self-checking JIT-disassembly capture harness
+  (`tools/X25519JitDisasm`), both run by the new
+  `constant-time.yml` workflow lane (monthly + on any X25519 change,
+  Linux + Windows) with the disassembly archived as an artifact.
+  `AUDIT-SCOPE.md` §3, `KNOWN-GAPS.md`, and `SECURITY.md` updated from
+  "by-construction, not by-measurement" to "by-construction plus
+  first-party measurement, not independently verified".
+- **`docs/THREAT-MODEL.md`** — assets, trust boundaries, attacker
+  capabilities, STRIDE table, residual risks (claims verified against
+  source, including the GC-relocation caveat on heap-held seeds).
+- **`docs/REPRODUCIBLE-BUILDS.md`** — third-party verification recipe:
+  rebuild at tag and compare the assembly inside the package (the
+  nupkg envelope itself differs post-upload due to nuget.org's
+  repository signature), plus `gh attestation verify`.
+- **OpenSSF Scorecard workflow** (`scorecard.yml`) — weekly + on push
+  to main, publishing to the code-scanning dashboard and the public
+  Scorecard API.
+- **SLSA build provenance attestation** in the release workflow
+  (`actions/attest-build-provenance`) for the `.nupkg`/`.snupkg`,
+  placed after the (optional) author-signing step so attested hashes
+  match published bytes.
+- **Tracking issues** #11–#16 for deferred items: BCL X25519
+  replacement, X-Wing RFC watch, SLH-DSA, NuGet reserved prefix,
+  continuous fuzzing (OSS-Fuzz does not accept .NET — verified
+  2026-07-03), and the OpenSSF Best Practices self-certification.
+
+### Changed
+
+- **CI and release test runs now exclude `Category=LongRunning`**
+  (the 1M-iteration RFC 7748 chain and the dudect timing test), making
+  the documented gating actually true — previously the 1M chain ran on
+  every push. The `constant-time.yml` lane and manual runs cover the
+  gated set.
+- `PemLabels.RequirePrivateKeyLabel`'s encrypted-PEM error message now
+  points at `ImportEncryptedPrivateKeyFromPem` instead of telling the
+  caller to use the BCL directly.
+
 ## [1.0.0] — 2026-07-03
 
 General availability. **Version, documentation, and release-policy changes

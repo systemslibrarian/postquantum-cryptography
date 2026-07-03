@@ -205,6 +205,13 @@ using MLKemPrivateKey loaded = MLKemKey.ImportPrivateKeyFromPem(privatePem);
 using MLKemPublicKey  pub    = MLKemKey.ImportPublicKeyFromPem(publicPem);
 ```
 
+**Password-protected (encrypted PKCS#8):** one strong policy, no knobs — PBES2 with PBKDF2-HMAC-SHA256 (600,000 iterations) and AES-256-CBC. Empty passwords are refused.
+
+```csharp
+string encryptedPem = priv.ExportEncryptedPkcs8PrivateKeyPem(password);
+using MLKemPrivateKey restored = MLKemKey.ImportEncryptedPrivateKeyFromPem(password, encryptedPem);
+```
+
 Same surface for ML-DSA via `MLDsaKey`.
 
 ---
@@ -224,6 +231,8 @@ Design choices that reduce risk:
 - **CSPRNG-only key generation.**
 - **Secret hygiene.** Private-key types implement `IDisposable` and zero key material and intermediate shared secrets on disposal (in `try/finally` so they're cleared even on exception paths).
 - **Spec-faithful X-Wing.** Combiner, key expansion, and encoding follow `draft-connolly-cfrg-xwing-kem` exactly — KAT-validated against the IETF draft Appendix C.
+- **Third-party vectors on every push.** The full Project Wycheproof x25519 adversarial set (518 vectors: twist points, low-order points, non-canonical encodings, arithmetic edge cases) and curated NIST ACVP known-answer sets for ML-KEM (keyGen, decapsulation incl. implicit rejection) and ML-DSA (keyGen, sigVer with tamper negatives) across all six parameter sets.
+- **Measured constant-time evidence for X25519.** A dudect-style statistical timing test and a per-run capture of the JIT's emitted disassembly run in a dedicated CI lane — see [`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md) and `AUDIT-SCOPE.md` for exactly what this does and does not prove.
 - **`KemEncapsulation` does not leak bytes** through `ToString()` (overridden), and its `Equals` is reference-based on the inner arrays to make accidental non–constant-time comparison harder.
 
 Thread-safety: instances are **not** thread-safe (matching the BCL contract); use one per thread or per request. Static facades are safe. See [`SECURITY.md`](SECURITY.md) for the full contract, response-time targets, and private vulnerability reporting (`security@…` or GitHub Security Advisories).
@@ -274,6 +283,8 @@ The bundled X25519 is pure managed code and runs unconditionally — that's why 
 - **[`samples/`](samples/)** — six runnable mini-apps (hybrid handshake, signed files, encrypt-to-public-key, zero-alloc hot loop, detached signature CLI, signed-package distribution).
 - **[`docs/RECIPES.md`](docs/RECIPES.md)** — pattern cookbook, 11 "how do I do X?" answers cross-linked to samples.
 - **[`docs/PERFORMANCE.md`](docs/PERFORMANCE.md)** — measured benchmarks and "picking based on your workload" guidance.
+- **[`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md)** — assets, trust boundaries, attacker capabilities, and honest residual risks.
+- **[`docs/REPRODUCIBLE-BUILDS.md`](docs/REPRODUCIBLE-BUILDS.md)** — verify the published package matches this source: rebuild-and-compare recipe + `gh attestation verify`.
 
 ---
 
@@ -287,7 +298,8 @@ samples/    01-06                                  — runnable demos
 benchmarks/ PostQuantum.Cryptography.Benchmarks   — BenchmarkDotNet hot-path metrics
 fuzz/       PostQuantum.Cryptography.Fuzz         — SharpFuzz coverage-guided fuzzer
 tools/      ComputeFingerprints                    — regenerate deterministic KAT fingerprints
-docs/       RECIPES.md, PERFORMANCE.md, README.md
+tools/      X25519JitDisasm                        — capture the JIT's emitted X25519 disassembly
+docs/       RECIPES.md, PERFORMANCE.md, THREAT-MODEL.md, REPRODUCIBLE-BUILDS.md, README.md
 ```
 
 ---

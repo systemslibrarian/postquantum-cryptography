@@ -19,4 +19,12 @@
     <ProjectReference Include="../../src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Authoritative third-party vector sets consumed at test run time:
+         Project Wycheproof (C2SP/wycheproof, testvectors_v1) and curated
+         NIST ACVP-Server gen-val subsets. See each file's provenance header
+         or the matching *Tests.cs for the upstream commit/URL. -->
+    <None Include="TestData/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

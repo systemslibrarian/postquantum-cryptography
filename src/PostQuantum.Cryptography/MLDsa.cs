@@ -272,6 +272,37 @@ public sealed class MLDsaPrivateKey : IDisposable
         return _dsa.ExportPkcs8PrivateKeyPem();
     }
 
+    /// <summary>
+    /// Exports the private key as a DER-encoded PKCS#8 EncryptedPrivateKeyInfo
+    /// structure, protected by <paramref name="password"/>. The encryption is
+    /// fixed at PBES2 / PBKDF2-HMAC-SHA256 (600,000 iterations) / AES-256-CBC —
+    /// there are no weaker knobs to select. Re-import with
+    /// <see cref="MLDsaKey.ImportEncryptedPkcs8PrivateKey"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="password"/> is empty.</exception>
+    public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Pbe.RequireNonEmptyPassword(password);
+        return _dsa.ExportEncryptedPkcs8PrivateKey(password, Pbe.Parameters);
+    }
+
+    /// <summary>
+    /// Exports the private key as a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo
+    /// structure (a <c>-----BEGIN ENCRYPTED PRIVATE KEY-----</c> block),
+    /// protected by <paramref name="password"/>. See
+    /// <see cref="ExportEncryptedPkcs8PrivateKey"/> for the fixed encryption
+    /// parameters. Re-import with
+    /// <see cref="MLDsaKey.ImportEncryptedPrivateKeyFromPem"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="password"/> is empty.</exception>
+    public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Pbe.RequireNonEmptyPassword(password);
+        return _dsa.ExportEncryptedPkcs8PrivateKeyPem(password, Pbe.Parameters);
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {
@@ -321,6 +352,32 @@ public static class MLDsaKey
     {
         PemLabels.RequirePublicKeyLabel(pem);
         return new(MLDsa.ImportFromPem(pem));
+    }
+
+    /// <summary>
+    /// Imports a private key from a DER-encoded PKCS#8 EncryptedPrivateKeyInfo
+    /// structure, decrypting with <paramref name="password"/>. The decryption
+    /// parameters are read from the structure itself. Throws
+    /// <see cref="System.Security.Cryptography.CryptographicException"/> when
+    /// the password is wrong.
+    /// </summary>
+    public static MLDsaPrivateKey ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
+        => new(MLDsa.ImportEncryptedPkcs8PrivateKey(password, source));
+
+    /// <summary>
+    /// Imports a private key from a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo
+    /// structure (a <c>-----BEGIN ENCRYPTED PRIVATE KEY-----</c> block),
+    /// decrypting with <paramref name="password"/>. Throws
+    /// <see cref="ArgumentException"/> if <paramref name="pem"/> is an
+    /// unencrypted private-key PEM (use <see cref="ImportPrivateKeyFromPem"/>),
+    /// a public-key PEM, or otherwise unrecognized, and
+    /// <see cref="System.Security.Cryptography.CryptographicException"/> when
+    /// the password is wrong.
+    /// </summary>
+    public static MLDsaPrivateKey ImportEncryptedPrivateKeyFromPem(ReadOnlySpan<char> password, ReadOnlySpan<char> pem)
+    {
+        PemLabels.RequireEncryptedPrivateKeyLabel(pem);
+        return new(MLDsa.ImportFromEncryptedPem(pem, password));
     }
 }
 

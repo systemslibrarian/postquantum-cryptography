@@ -26,13 +26,34 @@ internal static class PemLabels
         if (label == EncryptedPrivateKey)
         {
             throw new ArgumentException(
-                "Encrypted PKCS#8 private-key PEM is not supported by this overload. " +
-                "Decrypt it first, or use the BCL's encrypted-import APIs directly.",
+                "This is an encrypted PKCS#8 private-key PEM. Use " +
+                "ImportEncryptedPrivateKeyFromPem with the password instead.",
                 nameof(pem));
         }
 
         throw new ArgumentException(
             $"Expected a PEM-encoded PKCS#8 private key (-----BEGIN PRIVATE KEY-----) but found '{label}'.",
+            nameof(pem));
+    }
+
+    public static void RequireEncryptedPrivateKeyLabel(ReadOnlySpan<char> pem)
+    {
+        string label = ReadFirstLabel(pem);
+        if (label == EncryptedPrivateKey)
+        {
+            return;
+        }
+
+        if (label == PrivateKey)
+        {
+            throw new ArgumentException(
+                "This is an unencrypted PKCS#8 private-key PEM. Use ImportPrivateKeyFromPem " +
+                "(no password) instead.",
+                nameof(pem));
+        }
+
+        throw new ArgumentException(
+            $"Expected a PEM-encoded encrypted PKCS#8 private key (-----BEGIN ENCRYPTED PRIVATE KEY-----) but found '{label}'.",
             nameof(pem));
     }
 

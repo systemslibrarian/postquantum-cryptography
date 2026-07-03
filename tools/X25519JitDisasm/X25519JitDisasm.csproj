@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>X25519JitDisasm</RootNamespace>
+    <AssemblyName>X25519JitDisasm</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <!-- Diagnostic tool, not shipped: analyzer ceremony is not worth it here
+         (same policy as tools/ComputeFingerprints). -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1014</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj" />
+  </ItemGroup>
+
+</Project>

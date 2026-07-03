@@ -29,6 +29,9 @@ on:
 
 permissions:
   contents: write
+  # SLSA-style build provenance attestation for the packed artifacts.
+  id-token: write
+  attestations: write
 
 # All `run:` steps below use bash. ubuntu-latest defaults to bash; windows-latest
 # defaults to PowerShell, so we pin the shell at the workflow level to keep every
@@ -90,7 +93,9 @@ jobs:
         run: dotnet build PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Test
-        run: dotnet test PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-build
+        # LongRunning (1M-iteration chain, dudect timing) is covered by the
+        # constant-time.yml lane; excluding it keeps the release path fast.
+        run: dotnet test PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-build --filter "Category!=LongRunning"
 
       - name: Pack
         run: dotnet pack src/PostQuantum.Cryptography/PostQuantum.Cryptography.csproj -c ${{ env.CONFIGURATION }} --no-build -o ./artifacts/packages
@@ -138,6 +143,20 @@ jobs:
             dotnet nuget verify "$pkg"
           done
           rm -f codesign.pfx
+
+      - name: Attest build provenance (SLSA)
+        # Publishes a signed provenance statement binding the packed artifacts
+        # to this workflow run, repo, and commit. Anyone can verify with:
+        #   gh attestation verify <file> --repo systemslibrarian/postquantum-cryptography
+        # Runs AFTER the (optional) author-signing step because signing rewrites
+        # the .nupkg — the attested hashes must match the published bytes.
+        # Complements (does not replace) author signing, which is currently
+        # unfunded — see KNOWN-GAPS.md.
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ./artifacts/packages/*.nupkg
+            ./artifacts/packages/*.snupkg
 
       - name: Publish to NuGet.org
         env:

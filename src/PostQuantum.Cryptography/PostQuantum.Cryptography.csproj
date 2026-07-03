@@ -52,6 +52,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="PostQuantum.Cryptography.Tests" />
+    <!-- Diagnostic harness that captures the JIT's final-tier disassembly of
+         the bundled X25519 for constant-time review (tools/X25519JitDisasm).
+         Never shipped; not part of the solution. -->
+    <InternalsVisibleTo Include="X25519JitDisasm" />
   </ItemGroup>
 
   <ItemGroup>

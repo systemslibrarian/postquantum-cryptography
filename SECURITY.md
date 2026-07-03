@@ -44,9 +44,9 @@ Static facades (`MLKem768.GenerateKeyPair()`, `MLDsa87.ImportPrivateSeed(...)`, 
 
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, up-to-date list. Highlights:
 
-- The bundled X25519 is **designed branch-free** in its core ladder and conditional swap with respect to secret data, but that guarantee is **source-level only** — it has **not** been validated under the .NET JIT, tiered compilation, or speculative execution, and has **not** been independently audited for microarchitectural side channels (cache, branch-predictor, port-contention, prefetch). Listed as a first-order item in [`AUDIT-SCOPE.md`](AUDIT-SCOPE.md).
+- The bundled X25519 is **designed branch-free** in its core ladder and conditional swap with respect to secret data. First-party measured evidence exists (a dudect-style statistical timing test and a JIT disassembly capture, both produced by the `constant-time.yml` workflow — see [`KNOWN-GAPS.md`](KNOWN-GAPS.md)), but the implementation has **not** been independently audited for microarchitectural side channels (cache, branch-predictor, port-contention, prefetch, speculative execution). Listed as a first-order item in [`AUDIT-SCOPE.md`](AUDIT-SCOPE.md).
 - No FIPS 140-3 validation is claimed for this wrapper. The underlying BCL primitives' validation status is the platform's matter.
-- The API surface is intentionally small. Encrypted PKCS#8 (password-protected private keys) is not yet wrapped, and X-Wing keys are exchanged as their raw fixed-size byte strings only.
+- The API surface is intentionally small. Encrypted PKCS#8 (password-protected private keys) is supported for ML-KEM and ML-DSA with a fixed strong PBE policy (PBKDF2-HMAC-SHA256 · 600,000 iterations · AES-256-CBC; empty passwords refused). X-Wing keys are exchanged as their raw fixed-size byte strings only.
 
 ## Reporting a vulnerability
 

@@ -47,7 +47,10 @@ jobs:
         run: dotnet build PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Test
-        run: dotnet test PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=test-results-${{ matrix.os }}.trx" --results-directory ./artifacts/test-results --collect:"XPlat Code Coverage"
+        # Category=LongRunning (the 1M-iteration RFC 7748 chain, the dudect
+        # timing test) is excluded from the per-push run; the dedicated
+        # constant-time.yml lane and manual runs cover those.
+        run: dotnet test PostQuantum.Cryptography.slnx -c ${{ env.CONFIGURATION }} --no-build --filter "Category!=LongRunning" --logger "trx;LogFileName=test-results-${{ matrix.os }}.trx" --results-directory ./artifacts/test-results --collect:"XPlat Code Coverage"
 
       - name: Upload test results
         if: always()
