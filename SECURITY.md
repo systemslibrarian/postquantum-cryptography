@@ -2,7 +2,11 @@
 
 ## Status and assurance level
 
-`PostQuantum.Cryptography` is **release-candidate software** (`1.0.x` line, currently at `1.0.0-rc.1`). It is built to a high standard and tested, but it has **not** undergone an independent third-party security audit. Treat it accordingly: it is suitable for evaluation, prototyping, and helping the .NET ecosystem move toward post-quantum cryptography — not yet as the sole protection for high-value production secrets without your own review. **General availability as `1.0.0` is gated on the pending external audit.** The leading `1.0` reflects API stability; the `-rc.N` suffix carries the assurance caveat, and the [`AUDIT-SCOPE.md`](AUDIT-SCOPE.md) brief enumerates exactly what an external reviewer should focus on.
+`PostQuantum.Cryptography` is **generally available** (`1.0.x` line). It is built to a high standard and heavily tested, but it has **not** undergone an independent third-party security audit. The `1.0` communicates **API stability** — the public surface is locked and semantic versioning applies — not external assurance.
+
+**Why no audit yet, and the plan.** A professional cryptographic audit is a significant expense that this project cannot fund right now. The audit has not been dropped: [`AUDIT-SCOPE.md`](AUDIT-SCOPE.md) is a ready-to-hand reviewer brief kept current for exactly that engagement, and commissioning it is the project's first priority if funding comes through — sponsorship, a grant, or a commercial consumer underwriting it. Audit findings will be fixed and shipped as `1.0.x` patches, or as a new major version if anything structural surfaces. If your organization depends on this library and can help fund or coordinate an audit, please reach out via the contact channels below.
+
+Until then, treat the library accordingly: suitable for evaluation, prototyping, and helping the .NET ecosystem move toward post-quantum cryptography — not as the sole protection for high-value production secrets without your own review.
 
 ## What this library trusts
 
@@ -81,14 +85,13 @@ We're happy to credit you in the advisory and release notes — let us know how 
 
 | Version line                    | Status     | Receives security fixes?                                |
 | ------------------------------- | ---------- | ------------------------------------------------------- |
-| `1.0.x-rc.N` (release candidate, current) | Active     | Latest rc only                                |
-| `0.2.x` (preview, earlier)      | Superseded | No — upgrade to `1.0.0-rc.N`                            |
-| `0.1.x` (preview, earlier)      | Superseded | No — upgrade to `1.0.0-rc.N`                            |
-| `1.0.x` GA and later (post-audit) | _t.b.d._ | The two most recent minor releases of the current major |
+| `1.0.x` (GA, current)           | Active     | Latest patch of the line                                |
+| `1.0.0-rc.1`                    | Superseded | No — upgrade to the latest `1.0.x`                      |
+| `0.2.x` / `0.1.x` (previews)    | Superseded | No — upgrade to the latest `1.0.x`                      |
 
-While we are in `1.0.x-rc` only the latest rc receives backported fixes.
-When `1.0.0` GA ships (after the pending external audit), this table will
-be updated with the concrete post-GA policy.
+Security fixes land on the newest release of the current major line. When a
+second minor line exists (`1.1.x`), the two most recent minor releases of the
+current major will receive fixes.
 
 ---
 

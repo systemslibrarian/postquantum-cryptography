@@ -1,5 +1,15 @@
 # Version reconciliation — 1.0.0-rc.1
 
+> **Addendum (2026-07-03):** `1.0.0` general availability has shipped. The
+> audit gate described below was lifted — the external audit is not funded
+> and has no schedulable date, so holding GA indefinitely behind it no
+> longer served consumers. The assurance caveat moved from the `-rc.N`
+> suffix into explicit documentation (`README.md`, `SECURITY.md`,
+> `KNOWN-GAPS.md`). The audit remains scoped in `AUDIT-SCOPE.md` and will
+> be commissioned if funding comes through. The maturity invariant is
+> unaffected: the anchor moving to `1.0.0` only widens the headroom above
+> every downstream sibling.
+
 This file records the assigned package version for `PostQuantum.Cryptography`
 in the suite-wide reconciliation and confirms the maturity invariant.
 

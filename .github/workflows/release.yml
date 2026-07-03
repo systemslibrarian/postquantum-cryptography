@@ -2,14 +2,17 @@ name: Release
 
 # Publishes the NuGet package + symbols + SBOM when a `v*` tag is pushed.
 #
-# Stable (non-preview) tags REQUIRE package signing. Preview/alpha/beta/rc tags
-# may skip signing if no certificate secret is configured, so early development
-# isn't blocked on having a code-signing cert in place.
+# Author signing is applied when a certificate secret is configured, and skipped
+# (with a loud warning for stable tags) when it is not. A code-signing
+# certificate is a recurring cost the project cannot fund right now — the same
+# constraint documented for the external audit in KNOWN-GAPS.md. Restore the
+# fail-closed behavior for stable tags once a certificate is configured.
+# Packages always carry nuget.org's repository signature regardless.
 #
 # Required repository secrets:
 #   NUGET_API_KEY        — push token for nuget.org (Account → API Keys)
 #
-# Required for stable releases (optional for preview):
+# Optional (enables author signing):
 #   CODESIGN_PFX_BASE64    — base64-encoded code-signing PFX
 #   CODESIGN_PFX_PASSWORD  — PFX password
 
@@ -109,7 +112,7 @@ jobs:
           # Rename the SBOM to include the tag so it's unambiguous on the release page.
           mv ./artifacts/sbom/bom.xml "./artifacts/sbom/PostQuantum.Cryptography.${{ steps.flavour.outputs.tag }}.cyclonedx.xml"
 
-      - name: Sign packages (required for stable, optional for prerelease)
+      - name: Sign packages (when a certificate is configured)
         env:
           CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
           CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
@@ -118,11 +121,10 @@ jobs:
           if [ -z "${CODESIGN_PFX_BASE64:-}" ]; then
             if [ "${{ steps.flavour.outputs.is_prerelease }}" = "true" ]; then
               echo "::warning::No CODESIGN_PFX_BASE64 secret configured — skipping package signing (prerelease)."
-              exit 0
             else
-              echo "::error::Stable releases require package signing. Configure CODESIGN_PFX_BASE64 and CODESIGN_PFX_PASSWORD."
-              exit 1
+              echo "::warning::STABLE RELEASE WITHOUT AUTHOR SIGNING — no CODESIGN_PFX_BASE64 secret configured. The package ships with only nuget.org's repository signature. This is a documented, funding-constrained gap (KNOWN-GAPS.md); configure CODESIGN_PFX_BASE64 / CODESIGN_PFX_PASSWORD to enable author signing and restore fail-closed."
             fi
+            exit 0
           fi
           echo "$CODESIGN_PFX_BASE64" | base64 -d > codesign.pfx
           for pkg in ./artifacts/packages/*.nupkg; do

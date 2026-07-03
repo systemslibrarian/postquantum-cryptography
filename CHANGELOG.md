@@ -7,6 +7,39 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-07-03
+
+General availability. **Version, documentation, and release-policy changes
+only** — no crypto logic and no public-API changes; the shipped assembly is
+functionally identical to `1.0.0-rc.1`.
+
+### Changed
+
+- **Package version** bumped to `1.0.0` (from `1.0.0-rc.1`).
+  `InformationalVersion` follows; `AssemblyVersion` / `FileVersion`
+  remain `1.0.0.0`.
+- **The external audit no longer gates general availability.** The
+  independent third-party audit previously described as "pending" is
+  not funded and has no schedulable date; holding `1.0.0` indefinitely
+  behind it no longer served consumers. The release ships now with the
+  caveat stated plainly everywhere it matters: **`1.0` means API
+  stability, not third-party assurance.** The audit remains fully
+  scoped in `AUDIT-SCOPE.md` and will be commissioned if funding comes
+  through; findings will ship as `1.0.x` patches (or a major bump if
+  anything structural surfaces). Updated accordingly: `README.md`
+  (status callout, security posture, about section), `SECURITY.md`
+  (assurance level, supported-versions table), `KNOWN-GAPS.md`, and
+  `VERSION-RECONCILIATION.md` (addendum).
+- **Release workflow author-signing policy relaxed.** Stable tags no
+  longer fail closed when no code-signing certificate secret is
+  configured; the signing step now warns loudly and continues.
+  A certificate is a recurring cost under the same funding constraint
+  as the audit. Packages still carry nuget.org's repository signature.
+  Documented in `KNOWN-GAPS.md`; fail-closed will be restored once a
+  certificate is configured.
+- **`SmokeTestPackageVersion`** default aligned to `1.0.0`.
+- **README install command** drops `--prerelease`.
+
 ## [1.0.0-rc.1] — 2026-06-01
 
 First release candidate of the `1.0` line. **Version-only** bump as part
@@ -383,7 +416,8 @@ Initial preview.
 
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, current list.
 
-[Unreleased]: https://github.com/systemslibrarian/postquantum-cryptography/compare/v1.0.0-rc.1...HEAD
+[Unreleased]: https://github.com/systemslibrarian/postquantum-cryptography/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v1.0.0
 [1.0.0-rc.1]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v1.0.0-rc.1
 [0.1.0-preview.1]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v0.1.0-preview.1
 

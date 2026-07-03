@@ -22,14 +22,14 @@
   <PropertyGroup>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0-rc.1</InformationalVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
   </PropertyGroup>
 
   <!-- NuGet package metadata -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>PostQuantum.Cryptography</PackageId>
-    <Version>1.0.0-rc.1</Version>
+    <Version>1.0.0</Version>
     <Title>PostQuantum.Cryptography — clean, secure-by-default post-quantum primitives for .NET 10</Title>
     <Description>The foundation post-quantum cryptography library for .NET 10. Clean, high-level, secure-by-default wrappers over the BCL's native FIPS 203 (ML-KEM) and FIPS 204 (ML-DSA) implementations across all parameter sets, plus a spec-compliant X-Wing hybrid KEM (ML-KEM-768 + X25519, draft-connolly-cfrg-xwing-kem) for the recommended PQ/T migration path. Two complementary APIs: a typed disposable-key surface for long-lived keys, and a byte-oriented one-shot surface for fire-and-forget use. Span-based zero-allocation overloads, PEM/PKCS#8/SPKI interchange with up-front label validation, AOT/trim ready, deterministic builds, SourceLink, and the public API is locked by Microsoft.CodeAnalysis.PublicApiAnalyzers. Six runnable samples, recipes cookbook, and benchmarks ship with the repo.</Description>
     <PackageTags>post-quantum;pqc;cryptography;ml-kem;mlkem;kyber;ml-dsa;mldsa;dilithium;x-wing;xwing;hybrid;kem;signature;fips-203;fips-204;ietf;security;encryption;net10;dotnet;aot;trimmable;span;zero-allocation</PackageTags>

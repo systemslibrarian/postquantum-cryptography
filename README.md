@@ -15,7 +15,7 @@
 
 It does not reimplement lattice cryptography. ML-KEM and ML-DSA come straight from the .NET 10 runtime; this library is the surface on top: clean naming, fixed-size byte strings, disposable key types, span-based zero-allocation overloads, honest documentation, and runnable samples for the patterns you'll actually need.
 
-> ℹ️ **Status:** release candidate (`1.0.0-rc.1`) — **not independently audited.** The leading `1.0` reflects API stability, not assurance: the `-rc.1` suffix is load-bearing, and `1.0.0` will not ship until the pending external audit lands. The public API surface is locked by `Microsoft.CodeAnalysis.PublicApiAnalyzers` and any unintentional break fails CI. See [`SECURITY.md`](SECURITY.md) for the assurance level, [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for what's deliberately not in scope, and the X-Wing IETF-draft-tracking caveat below.
+> ℹ️ **Status:** `1.0.0` general availability — **not independently audited.** The `1.0` reflects API stability and engineering discipline, not third-party assurance. An external security audit is fully scoped and ready to commission ([`AUDIT-SCOPE.md`](AUDIT-SCOPE.md)) but is **currently unfunded — we cannot pay for it right now, and we will commission it if funding comes through** (sponsorship, grant, or a commercial consumer underwriting it). Audit findings will ship as `1.0.x` patches, or a new major version if anything structural surfaces. The public API surface is locked by `Microsoft.CodeAnalysis.PublicApiAnalyzers` and any unintentional break fails CI. See [`SECURITY.md`](SECURITY.md) for the assurance level, [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for what's deliberately not in scope, and the X-Wing IETF-draft-tracking caveat below.
 
 ---
 
@@ -59,7 +59,7 @@ The short version: **if you wanted to write `using` blocks against the BCL anywa
 ## Install
 
 ```bash
-dotnet add package PostQuantum.Cryptography --prerelease
+dotnet add package PostQuantum.Cryptography
 ```
 
 Requires **.NET 10** or later. PQC availability also depends on the runtime build's underlying crypto provider — see the [platform support matrix](#platform--runtime-support-matrix) below.
@@ -211,7 +211,7 @@ Same surface for ML-DSA via `MLDsaKey`.
 
 ## Security posture
 
-**This is release-candidate software with no independent third-party audit.** Build with confidence for evaluation, prototyping, and helping your codebase move to post-quantum — but for cases where these primitives are the sole protection of high-value secrets, do your own review (and ideally fund a third-party audit; the maintainer welcomes coordination, and `1.0.0` general availability is gated on the pending external audit).
+**This library has not undergone an independent third-party security audit.** The `1.0.0` version signals a stable, locked API and a disciplined engineering process — not external assurance. An audit is fully scoped ([`AUDIT-SCOPE.md`](AUDIT-SCOPE.md)); the project cannot fund it right now, and commissioning it is the first priority if funding comes through. Until then: build with confidence for evaluation, prototyping, and helping your codebase move to post-quantum — but where these primitives are the sole protection of high-value secrets, do your own review of the small original-crypto surface (or help fund the audit; the maintainer welcomes coordination — see [`SECURITY.md`](SECURITY.md)).
 
 What this library trusts:
 
@@ -307,7 +307,7 @@ The PQC tests are skipped cleanly on hosts where the runtime doesn't expose ML-K
 
 `PostQuantum.Cryptography` is built and maintained by **Paul Clark** ([@systemslibrarian](https://github.com/systemslibrarian)) as part of the broader `PostQuantum.*` ecosystem of clean, secure-by-default .NET libraries.
 
-**Transparency about AI assistance.** This library was built with substantial help from Anthropic's Claude (Opus 4.7). Claude accelerated the implementation, testing, documentation, and tooling work — it wrote most of the C#, the samples, the recipes, the CI pipelines, and these very docs, under direction and review. Cryptographic *correctness* of the wrapped BCL primitives belongs to .NET; the wrapper layer, the bundled X25519 port, the X-Wing composition, and every design choice were specified by a human and exercised against (a) the IETF draft KATs, (b) the RFC 7748 X25519 KATs, (c) byte-equality cross-checks against the BCL, (d) a coverage-guided fuzzer, and (e) an in-process smoke fuzzer that runs on every CI build. The library has not undergone an independent third-party audit (see [`SECURITY.md`](SECURITY.md)) — that is the right move for anyone shipping this in safety-critical or high-value-secret contexts.
+**Transparency about AI assistance.** This library was built with substantial help from Anthropic's Claude (Opus 4.7). Claude accelerated the implementation, testing, documentation, and tooling work — it wrote most of the C#, the samples, the recipes, the CI pipelines, and these very docs, under direction and review. Cryptographic *correctness* of the wrapped BCL primitives belongs to .NET; the wrapper layer, the bundled X25519 port, the X-Wing composition, and every design choice were specified by a human and exercised against (a) the IETF draft KATs, (b) the RFC 7748 X25519 KATs, (c) byte-equality cross-checks against the BCL, (d) a coverage-guided fuzzer, and (e) an in-process smoke fuzzer that runs on every CI build. The library has not undergone an independent third-party audit (see [`SECURITY.md`](SECURITY.md)) — one is scoped and will be commissioned when funding allows, and doing your own review remains the right move for anyone shipping this in safety-critical or high-value-secret contexts.
 
 If you find a bug, please file an issue. If you find a security issue, please [report it privately](SECURITY.md#reporting-a-vulnerability).
 
