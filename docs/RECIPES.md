@@ -328,6 +328,9 @@ Two independent keys, two independent signatures — do **not** try to derive
 one key from the other. Size the storage accordingly: an ML-DSA-87 signature
 is 4,627 bytes next to ECDSA-P256's ~64.
 
+> Runnable end-to-end, with the full accept/reject matrix per phase:
+> [`samples/07-MigrateFromClassical`](../samples/07-MigrateFromClassical/).
+
 ### Recipe 13 — Keys in ASP.NET Core / dependency injection
 
 **When:** a service signs or decapsulates on every request and you need to
@@ -354,6 +357,10 @@ Public keys have the same instance-level contract — cache the *bytes*
 (`Export()` / SPKI) as the singleton and import per scope, or pool. Never
 `Dispose()` a key another request may still be using; scoped registration
 handles disposal for you at request end.
+
+> Runnable end-to-end: a minimal-API service self-tested with 48 concurrent
+> signing requests —
+> [`samples/10-AspNetCoreSigningService`](../samples/10-AspNetCoreSigningService/).
 
 ### Recipe 14 — Sign or encrypt large files
 
@@ -384,9 +391,12 @@ AES-GCM with a fresh nonce per chunk (a counter nonce derived per chunk is
 fine — the AES key is unique per file) and authenticate the chunk index in
 the associated data so chunks can't be reordered or dropped.
 
+> Runnable end-to-end on a 32 MB file with bounded memory, including
+> tamper / reorder / truncation negatives:
+> [`samples/09-LargeFileStreaming`](../samples/09-LargeFileStreaming/).
 > The detached-signature CLI ([`samples/05`](../samples/05-DetachedSignatureCli/))
 > and package-distribution sample ([`samples/06`](../samples/06-SignedPackageDistribution/))
-> both use the hash-then-sign shape.
+> also use the hash-then-sign shape.
 
 ### Recipe 15 — Key rotation with versioned trust anchors
 
@@ -413,6 +423,10 @@ Rotation procedure: (1) add `publisher-2027` to every verifier's keyring;
 artifact signed by `publisher-2026` ages out, remove it from keyrings. Never
 reuse a retired key id. If a key is *compromised* rather than rotated,
 removal is step 1, and everything it signed must be re-signed.
+
+> Runnable end-to-end — the full lifecycle including the retirement
+> consequence, a compromise drill, and a key-substitution negative:
+> [`samples/08-KeyRotation`](../samples/08-KeyRotation/).
 
 ---
 

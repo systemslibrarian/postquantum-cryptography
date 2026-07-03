@@ -5,7 +5,7 @@ Additional documentation for `PostQuantum.Cryptography` lives here.
 Start here:
 
 - [`RECIPES.md`](RECIPES.md) — pattern cookbook: "how do I do X?" answers with code snippets, cross-linked to runnable samples.
-- [`../samples/`](../samples/) — six focused, runnable mini-apps covering hybrid KEM, signing, file encryption, zero-alloc loops, a CLI, and signed-package distribution.
+- [`../samples/`](../samples/) — ten focused, runnable mini-apps covering hybrid KEM, signing, file encryption, zero-alloc loops, a CLI, signed-package distribution, RSA/ECDSA migration, key rotation, large-file streaming, and ASP.NET Core integration.
 - [`PERFORMANCE.md`](PERFORMANCE.md) — measured ops/sec, time per op, and per-op allocations for every primitive, plus reproducible benchmark instructions.
 - [`THREAT-MODEL.md`](THREAT-MODEL.md) — assets, trust boundaries, attacker capabilities, STRIDE table, and honest residual risks.
 - [`REPRODUCIBLE-BUILDS.md`](REPRODUCIBLE-BUILDS.md) — verify a published package matches this source: rebuild-and-compare recipe and provenance attestation.

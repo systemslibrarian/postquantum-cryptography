@@ -11,7 +11,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- Override the version per-invocation via -p:SmokeTestPackageVersion=...
          so this can be pinned to whatever was just packed. -->
-    <SmokeTestPackageVersion Condition="'$(SmokeTestPackageVersion)' == ''">1.0.0</SmokeTestPackageVersion>
+    <SmokeTestPackageVersion Condition="'$(SmokeTestPackageVersion)' == ''">1.1.0</SmokeTestPackageVersion>
   </PropertyGroup>
 
   <!-- Pull the *NuGet package* (not the source project) so this verifies

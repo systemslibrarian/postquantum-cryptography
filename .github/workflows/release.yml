@@ -9,8 +9,13 @@ name: Release
 # fail-closed behavior for stable tags once a certificate is configured.
 # Packages always carry nuget.org's repository signature regardless.
 #
-# Required repository secrets:
-#   NUGET_API_KEY        — push token for nuget.org (Account → API Keys)
+# Publishing credentials — two supported modes, checked in this order:
+#   1. NUGET_API_KEY secret (legacy long-lived token). Used if present.
+#   2. NuGet Trusted Publishing (OIDC): no secret at all. Requires a policy on
+#      nuget.org (Profile → Trusted Publishing) naming this repository and
+#      this workflow file; the NuGet/login action then exchanges the runner's
+#      OIDC identity for a short-lived API key. Once the policy is in place,
+#      DELETE the NUGET_API_KEY secret to switch over.
 #
 # Optional (enables author signing):
 #   CODESIGN_PFX_BASE64    — base64-encoded code-signing PFX
@@ -158,18 +163,34 @@ jobs:
             ./artifacts/packages/*.nupkg
             ./artifacts/packages/*.snupkg
 
+      - name: NuGet login via Trusted Publishing (OIDC)
+        # Only runs when no legacy NUGET_API_KEY secret is configured.
+        # Exchanges this workflow's OIDC identity (permissions: id-token)
+        # for a short-lived nuget.org API key. Fails if no Trusted
+        # Publishing policy exists for this repo+workflow — set one up at
+        # nuget.org → Profile → Trusted Publishing before deleting the secret.
+        id: nuget_login
+        if: env.LEGACY_NUGET_KEY == ''
+        env:
+          LEGACY_NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
+        uses: NuGet/login@v1
+        with:
+          user: systemslibrarian
+
       - name: Publish to NuGet.org
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          LEGACY_NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
+          OIDC_NUGET_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
         run: |
           set -euo pipefail
-          if [ -z "${NUGET_API_KEY:-}" ]; then
-            echo "::error::NUGET_API_KEY secret is not set — cannot publish."
+          api_key="${LEGACY_NUGET_KEY:-${OIDC_NUGET_KEY:-}}"
+          if [ -z "$api_key" ]; then
+            echo "::error::No publish credential: neither the NUGET_API_KEY secret nor a Trusted Publishing token is available."
             exit 1
           fi
           for pkg in ./artifacts/packages/*.nupkg; do
             dotnet nuget push "$pkg" \
-              --api-key "$NUGET_API_KEY" \
+              --api-key "$api_key" \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done

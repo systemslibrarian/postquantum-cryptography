@@ -1,9 +1,1 @@
 #nullable enable
-PostQuantum.Cryptography.MLDsaPrivateKey.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password) -> byte[]!
-PostQuantum.Cryptography.MLDsaPrivateKey.ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password) -> string!
-PostQuantum.Cryptography.MLKemPrivateKey.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password) -> byte[]!
-PostQuantum.Cryptography.MLKemPrivateKey.ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password) -> string!
-static PostQuantum.Cryptography.MLDsaKey.ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLDsaPrivateKey!
-static PostQuantum.Cryptography.MLDsaKey.ImportEncryptedPrivateKeyFromPem(System.ReadOnlySpan<char> password, System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLDsaPrivateKey!
-static PostQuantum.Cryptography.MLKemKey.ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLKemPrivateKey!
-static PostQuantum.Cryptography.MLKemKey.ImportEncryptedPrivateKeyFromPem(System.ReadOnlySpan<char> password, System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLKemPrivateKey!

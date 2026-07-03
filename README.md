@@ -280,7 +280,7 @@ The bundled X25519 is pure managed code and runs unconditionally — that's why 
 
 ## Learning the library
 
-- **[`samples/`](samples/)** — six runnable mini-apps (hybrid handshake, signed files, encrypt-to-public-key, zero-alloc hot loop, detached signature CLI, signed-package distribution).
+- **[`samples/`](samples/)** — ten runnable mini-apps: the basics (hybrid handshake, signed files, encrypt-to-public-key, zero-alloc hot loop, detached signature CLI, signed-package distribution) plus the production-adoption set (RSA/ECDSA migration via dual-signing, key rotation, large-file streaming, ASP.NET Core service integration).
 - **[`docs/RECIPES.md`](docs/RECIPES.md)** — pattern cookbook, 11 "how do I do X?" answers cross-linked to samples.
 - **[`docs/PERFORMANCE.md`](docs/PERFORMANCE.md)** — measured benchmarks and "picking based on your workload" guidance.
 - **[`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md)** — assets, trust boundaries, attacker capabilities, and honest residual risks.
@@ -294,7 +294,7 @@ The bundled X25519 is pure managed code and runs unconditionally — that's why 
 src/        PostQuantum.Cryptography              — the library
 tests/      PostQuantum.Cryptography.Tests        — unit, KAT, property, smoke-fuzz tests
 tests/      PostQuantum.Cryptography.SmokeTest    — consumes the packed .nupkg
-samples/    01-06                                  — runnable demos
+samples/    01-10                                  — runnable demos
 benchmarks/ PostQuantum.Cryptography.Benchmarks   — BenchmarkDotNet hot-path metrics
 fuzz/       PostQuantum.Cryptography.Fuzz         — SharpFuzz coverage-guided fuzzer
 tools/      ComputeFingerprints                    — regenerate deterministic KAT fingerprints

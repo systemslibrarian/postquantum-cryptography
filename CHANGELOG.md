@@ -7,6 +7,48 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-03
+
+Feature and assurance release: encrypted PKCS#8, third-party vector
+suites, measured constant-time evidence, four production-adoption
+samples, supply-chain provenance, and NuGet Trusted Publishing support.
+The eight encrypted-PKCS#8 members are the only public-API additions
+(promoted from `PublicAPI.Unshipped.txt` to `Shipped.txt`); everything
+else is additive tooling, tests, and documentation.
+
+### Added (samples & release infrastructure)
+
+- **Four production-adoption samples**, each self-checking (throws on
+  any unexpected verdict, exits non-zero):
+  - `07-MigrateFromClassical` — dual-signature (ECDSA P-256 + ML-DSA-87)
+    envelope with the three-phase verifier rollout (observe → require
+    both → PQ-only) and the full accept/reject matrix.
+  - `08-KeyRotation` — versioned trust-anchor keyring: overlap window,
+    retirement (with its honest consequence demonstrated), compromise
+    drill, key-substitution negative. Encrypted PKCS#8 keys at rest.
+  - `09-LargeFileStreaming` — 32 MB file with bounded memory:
+    hash-then-sign (mid-file bit-flip negative) and chunked AES-GCM
+    where the associated data pins chunk order and completeness
+    (tamper / reorder / truncation all rejected).
+  - `10-AspNetCoreSigningService` — minimal-API service with the safe
+    DI key lifetime (seed singleton, key scoped), self-tested with 48
+    concurrent requests; the unsafe singleton pattern documented.
+- **NuGet Trusted Publishing support** in the release workflow: when no
+  `NUGET_API_KEY` secret is configured, the `NuGet/login` action
+  exchanges the workflow's OIDC identity for a short-lived API key.
+  The legacy secret, if present, still takes precedence — delete it
+  once the Trusted Publishing policy is configured on nuget.org.
+
+### Changed (release mechanics)
+
+- **Package version** `1.0.0` → `1.1.0` (new public API ⇒ minor bump).
+  `FileVersion` `1.1.0.0`; `AssemblyVersion` stays `1.0.0.0`.
+- **Encrypted PKCS#8 API promoted** to `PublicAPI.Shipped.txt`.
+- `SmokeTestPackageVersion` default → `1.1.0`; NuGet `Description`
+  refreshed (encrypted PKCS#8, ten samples); `SECURITY.md`
+  supported-versions table updated (`1.1.x` current, `1.0.x` still
+  receives fixes as the second-most-recent minor line).
+
 ### Added
 
 - **Encrypted PKCS#8 (password-protected private keys)** for ML-KEM and
@@ -533,7 +575,8 @@ Initial preview.
 
 See [`KNOWN-GAPS.md`](KNOWN-GAPS.md) for the authoritative, current list.
 
-[Unreleased]: https://github.com/systemslibrarian/postquantum-cryptography/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/systemslibrarian/postquantum-cryptography/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v1.1.0
 [1.0.0]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v1.0.0
 [1.0.0-rc.1]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v1.0.0-rc.1
 [0.1.0-preview.1]: https://github.com/systemslibrarian/postquantum-cryptography/releases/tag/v0.1.0-preview.1

@@ -85,13 +85,12 @@ We're happy to credit you in the advisory and release notes — let us know how 
 
 | Version line                    | Status     | Receives security fixes?                                |
 | ------------------------------- | ---------- | ------------------------------------------------------- |
-| `1.0.x` (GA, current)           | Active     | Latest patch of the line                                |
-| `1.0.0-rc.1`                    | Superseded | No — upgrade to the latest `1.0.x`                      |
-| `0.2.x` / `0.1.x` (previews)    | Superseded | No — upgrade to the latest `1.0.x`                      |
+| `1.1.x` (GA, current)           | Active     | Latest patch of the line                                |
+| `1.0.x`                         | Supported  | Yes — the two most recent minor lines receive fixes     |
+| `1.0.0-rc.1`                    | Superseded | No — upgrade to the latest `1.1.x`                      |
+| `0.2.x` / `0.1.x` (previews)    | Superseded | No — upgrade to the latest `1.1.x`                      |
 
-Security fixes land on the newest release of the current major line. When a
-second minor line exists (`1.1.x`), the two most recent minor releases of the
-current major will receive fixes.
+Security fixes land on the two most recent minor lines of the current major.
 
 ---
 

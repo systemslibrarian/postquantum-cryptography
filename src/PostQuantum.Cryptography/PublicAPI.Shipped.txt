@@ -60,6 +60,8 @@ PostQuantum.Cryptography.MLDsaOperations
 PostQuantum.Cryptography.MLDsaPrivateKey
 PostQuantum.Cryptography.MLDsaPrivateKey.Algorithm.get -> System.Security.Cryptography.MLDsaAlgorithm!
 PostQuantum.Cryptography.MLDsaPrivateKey.Dispose() -> void
+PostQuantum.Cryptography.MLDsaPrivateKey.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password) -> byte[]!
+PostQuantum.Cryptography.MLDsaPrivateKey.ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password) -> string!
 PostQuantum.Cryptography.MLDsaPrivateKey.ExportPkcs8PrivateKey() -> byte[]!
 PostQuantum.Cryptography.MLDsaPrivateKey.ExportPkcs8PrivateKeyPem() -> string!
 PostQuantum.Cryptography.MLDsaPrivateKey.ExportPrivateSeed() -> byte[]!
@@ -90,6 +92,8 @@ PostQuantum.Cryptography.MLKemPrivateKey.Decapsulate(System.ReadOnlySpan<byte> c
 PostQuantum.Cryptography.MLKemPrivateKey.Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) -> void
 PostQuantum.Cryptography.MLKemPrivateKey.Dispose() -> void
 PostQuantum.Cryptography.MLKemPrivateKey.ExportDecapsulationKey() -> byte[]!
+PostQuantum.Cryptography.MLKemPrivateKey.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password) -> byte[]!
+PostQuantum.Cryptography.MLKemPrivateKey.ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password) -> string!
 PostQuantum.Cryptography.MLKemPrivateKey.ExportEncapsulationKey() -> byte[]!
 PostQuantum.Cryptography.MLKemPrivateKey.ExportPkcs8PrivateKey() -> byte[]!
 PostQuantum.Cryptography.MLKemPrivateKey.ExportPkcs8PrivateKeyPem() -> string!
@@ -145,6 +149,8 @@ static PostQuantum.Cryptography.MLDsa87.ImportPrivateSeed(System.ReadOnlySpan<by
 static PostQuantum.Cryptography.MLDsa87.ImportPublicKey(System.ReadOnlySpan<byte> publicKey) -> PostQuantum.Cryptography.MLDsaPublicKey!
 static PostQuantum.Cryptography.MLDsa87.ImportSecretKey(System.ReadOnlySpan<byte> secretKey) -> PostQuantum.Cryptography.MLDsaPrivateKey!
 static PostQuantum.Cryptography.MLDsa87.IsSupported.get -> bool
+static PostQuantum.Cryptography.MLDsaKey.ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLDsaPrivateKey!
+static PostQuantum.Cryptography.MLDsaKey.ImportEncryptedPrivateKeyFromPem(System.ReadOnlySpan<char> password, System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLDsaPrivateKey!
 static PostQuantum.Cryptography.MLDsaKey.ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLDsaPrivateKey!
 static PostQuantum.Cryptography.MLDsaKey.ImportPrivateKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLDsaPrivateKey!
 static PostQuantum.Cryptography.MLDsaKey.ImportPublicKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLDsaPublicKey!
@@ -169,6 +175,8 @@ static PostQuantum.Cryptography.MLKem768.ImportDecapsulationKey(System.ReadOnlyS
 static PostQuantum.Cryptography.MLKem768.ImportEncapsulationKey(System.ReadOnlySpan<byte> encapsulationKey) -> PostQuantum.Cryptography.MLKemPublicKey!
 static PostQuantum.Cryptography.MLKem768.ImportPrivateSeed(System.ReadOnlySpan<byte> privateSeed) -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKem768.IsSupported.get -> bool
+static PostQuantum.Cryptography.MLKemKey.ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLKemPrivateKey!
+static PostQuantum.Cryptography.MLKemKey.ImportEncryptedPrivateKeyFromPem(System.ReadOnlySpan<char> password, System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKemKey.ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKemKey.ImportPrivateKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLKemPrivateKey!
 static PostQuantum.Cryptography.MLKemKey.ImportPublicKeyFromPem(System.ReadOnlySpan<char> pem) -> PostQuantum.Cryptography.MLKemPublicKey!
