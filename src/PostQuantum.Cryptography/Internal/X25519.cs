@@ -79,11 +79,21 @@ internal static class X25519
         z[31] &= 127;
         z[31] |= 64;
 
+        // TweetNaCl zeroes a/c/d explicitly; this port relies on stackalloc
+        // zero-initialization instead (`.locals init`). That assumption is
+        // load-bearing: the ladder seeds a[0]=1 / d[0]=1 into otherwise-zero
+        // limbs, and Mul accumulates with `+=`. If SkipLocalsInit is ever
+        // introduced (attribute or MSBuild property), these clears are what
+        // keep the arithmetic correct — do not remove them.
         Span<long> x = stackalloc long[80];
+        x.Clear();
         Span<long> a = stackalloc long[16];
+        a.Clear();
         Span<long> b = stackalloc long[16];
         Span<long> c = stackalloc long[16];
+        c.Clear();
         Span<long> d = stackalloc long[16];
+        d.Clear();
         Span<long> e = stackalloc long[16];
         Span<long> f = stackalloc long[16];
         Span<long> x32 = stackalloc long[16];
@@ -248,6 +258,10 @@ internal static class X25519
     private static void Mul(Span<long> o, ReadOnlySpan<long> a, ReadOnlySpan<long> b)
     {
         Span<long> t = stackalloc long[31];
+        // The schoolbook accumulation below uses `+=`, so t must start
+        // all-zero. Explicit clear so correctness never silently depends on
+        // stackalloc zero-initialization (see the note in ScalarMult).
+        t.Clear();
         try
         {
             for (int i = 0; i < 16; i++)

@@ -103,6 +103,17 @@ static void DecryptFromEnvelope(string envelopePath, string outPath, XWingPrivat
     byte[] envelope = File.ReadAllBytes(envelopePath);
     int offset = 0;
 
+    // Validate the length up front so a truncated file fails with a clear
+    // InvalidDataException instead of an ArgumentOutOfRangeException from a
+    // slice below. (Header = magic 4 + salt 16 + KEM ciphertext + nonce 12
+    // + tag 16; the body may be empty.)
+    int headerLength = 4 + 16 + XWing.CiphertextSizeInBytes + 12 + 16;
+    if (envelope.Length < headerLength)
+    {
+        throw new InvalidDataException(
+            $"Envelope is truncated: {envelope.Length} bytes, but the header alone is {headerLength}.");
+    }
+
     ReadOnlySpan<byte> magic = envelope.AsSpan(offset, 4); offset += 4;
     if (!magic.SequenceEqual(EnvelopeMagic()))
     {
@@ -148,7 +159,10 @@ static (byte[] AesKey, byte[] Nonce) DeriveKeyAndNonce(byte[] ikm, byte[] salt)
     // be derived from the same secret.
     byte[] info = Encoding.UTF8.GetBytes("pqc-sample-03/aes-gcm/v1");
     byte[] okm = HKDF.DeriveKey(HashAlgorithmName.SHA256, ikm, 32 + 12, salt, info);
-    return (okm.AsSpan(0, 32).ToArray(), okm.AsSpan(32, 12).ToArray());
+    (byte[] AesKey, byte[] Nonce) result = (okm.AsSpan(0, 32).ToArray(), okm.AsSpan(32, 12).ToArray());
+    // okm contains the AES key — clear it like every other secret we hold.
+    CryptographicOperations.ZeroMemory(okm);
+    return result;
 }
 
 static ReadOnlySpan<byte> EnvelopeMagic() => "PQ03"u8;

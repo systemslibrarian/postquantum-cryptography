@@ -3,10 +3,13 @@ using System.Diagnostics;
 namespace PostQuantum.Cryptography;
 
 /// <summary>
-/// A bundle returned by the algorithm facades' <c>GenerateKeyPair</c> overloads
-/// that yields both the public and private halves of a freshly-generated key
-/// in a single call. Useful in one-shot scenarios where you don't want to call
-/// <see cref="MLKemPrivateKey.GetPublicKey"/> separately.
+/// A small value bundle for carrying the public and private halves of a key
+/// pair together — for example when a helper method of your own produces both
+/// and you want a clearer shape than a tuple. The library's facades return
+/// <see cref="MLKemPrivateKey"/> / <see cref="MLDsaPrivateKey"/> /
+/// <see cref="XWingPrivateKey"/> directly (get the public half via
+/// <c>GetPublicKey()</c>); nothing in this library returns
+/// <see cref="PqKeyPair{TPublic, TPrivate}"/> itself.
 /// </summary>
 /// <typeparam name="TPublic">Public-key type for the algorithm.</typeparam>
 /// <typeparam name="TPrivate">Private-key type for the algorithm.</typeparam>
@@ -22,7 +25,7 @@ namespace PostQuantum.Cryptography;
 /// <para>
 /// Typical use:
 /// <code>
-/// var pair = MLKem768.GenerateKeyPair_Pair();
+/// var pair = new PqKeyPair&lt;MLKemPublicKey, MLKemPrivateKey&gt;(pub, priv);
 /// using (pair.Private)
 /// using (pair.Public)
 /// {
@@ -31,12 +34,19 @@ namespace PostQuantum.Cryptography;
 /// </code>
 /// or with deconstruction:
 /// <code>
-/// var (pub, priv) = MLKem768.GenerateKeyPair_Pair();
+/// var (pub, priv) = pair;
 /// using (priv) using (pub)
 /// {
 ///     // ...
 /// }
 /// </code>
+/// </para>
+/// <para>
+/// <b><c>default</c> footgun:</b> like every <see langword="struct"/>, this
+/// type has a default instance — and <c>default(PqKeyPair&lt;,&gt;)</c> has
+/// <see langword="null"/> <see cref="Public"/> and <see cref="Private"/>
+/// despite the non-nullable annotations. Only use instances constructed with
+/// both halves.
 /// </para>
 /// <para>
 /// <b>Equality semantics:</b> reference equality on the underlying key

@@ -68,7 +68,16 @@ public sealed class MLDsaPublicKey : IDisposable
         : $"MLDsaPublicKey ({_dsa.Algorithm.Name})";
 
     /// <summary>The ML-DSA parameter set this key belongs to.</summary>
-    public MLDsaAlgorithm Algorithm => _dsa.Algorithm;
+    public MLDsaAlgorithm Algorithm
+    {
+        get
+        {
+            // The BCL property tolerates a disposed handle; we enforce the
+            // documented "disposed keys throw" contract uniformly.
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _dsa.Algorithm;
+        }
+    }
 
     /// <summary>Verifies a signature over <paramref name="data"/>.</summary>
     public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
@@ -160,7 +169,16 @@ public sealed class MLDsaPrivateKey : IDisposable
         : $"MLDsaPrivateKey ({_dsa.Algorithm.Name}, secret material redacted)";
 
     /// <summary>The ML-DSA parameter set this key belongs to.</summary>
-    public MLDsaAlgorithm Algorithm => _dsa.Algorithm;
+    public MLDsaAlgorithm Algorithm
+    {
+        get
+        {
+            // The BCL property tolerates a disposed handle; we enforce the
+            // documented "disposed keys throw" contract uniformly.
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _dsa.Algorithm;
+        }
+    }
 
     /// <summary>
     /// Returns the public (verifying) key corresponding to this private key.

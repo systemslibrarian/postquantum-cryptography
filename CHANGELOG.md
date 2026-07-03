@@ -60,6 +60,59 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   continuous fuzzing (OSS-Fuzz does not accept .NET — verified
   2026-07-03), and the OpenSSF Best Practices self-certification.
 
+### Fixed (post-1.0.0 review sweep)
+
+A three-angle review (crypto core vs specs, wrapper/API safety, samples
+audit) found **zero bugs in the cryptographic core** — X25519 verified
+operation-by-operation against TweetNaCl/RFC 7748, X-Wing against the IETF
+draft — and the following real issues elsewhere, all fixed:
+
+- **`PqKeyPair<,>` XML docs described an API that does not exist.** The
+  summary claimed facades return the type and both usage examples called
+  `MLKem768.GenerateKeyPair_Pair()`, which was never shipped — copying the
+  IntelliSense example produced CS0117. Docs rewritten to describe the type
+  as the caller-side bundle it actually is, with a new `default`-instance
+  footgun warning (matching `KemEncapsulation`'s standard).
+- **`Algorithm` property getters now throw `ObjectDisposedException` on
+  disposed keys** (all four key types). The BCL property tolerates a
+  disposed handle, so these were the only members violating the documented
+  "operations on a disposed key throw" contract.
+- **`PemLabels` mixed-file error message** no longer gives wrong advice
+  when a PEM contains an unencrypted block followed by an encrypted one.
+
+### Hardened
+
+- **X25519 no longer silently depends on `stackalloc` zero-initialization**:
+  explicit `.Clear()` on the ladder temporaries and `Mul`'s accumulator
+  (the spots where TweetNaCl zeroes explicitly), with a comment explaining
+  why they are load-bearing. No behavior change — verified bit-identical
+  against the RFC 7748 KATs, all 518 Wycheproof vectors, and the X-Wing
+  draft KATs.
+
+### Samples & recipes (developer-experience sweep)
+
+- **Sample 01** now derives the AES key through HKDF in the copyable code
+  (previously the raw KEM secret keyed AES-GCM with only a comment saying
+  not to).
+- **Sample 02** persists the private key as **encrypted PKCS#8** and
+  reloads it with the password.
+- **Sample 03**: HKDF output (`okm`) is now zeroed like every other secret;
+  truncated envelopes fail with a clear `InvalidDataException` instead of a
+  slice exception.
+- **Sample 05 (CLI)** gains `--password` (encrypted-PKCS#8 keygen/sign),
+  catches `DirectoryNotFoundException`/wrong-password cleanly (exit 2), and
+  rejects a trailing flag with no value instead of silently dropping it.
+- **Sample 06** now actually demonstrates all the negative cases its header
+  promised (added tampered-manifest and empty-signature tests) and
+  documents the manifest re-serialization caveat for production copies.
+- **`docs/RECIPES.md`**: Recipe 7 covers encrypted PKCS#8 (and the X-Wing
+  raw-seed exception); four new adoption recipes — dual-signing migration
+  from RSA/ECDSA (12), ASP.NET Core / DI key-lifetime patterns (13),
+  large-file hash-then-sign / chunked AEAD (14), key rotation with
+  versioned trust anchors (15).
+- **`samples/README.md`**: reading order now includes 06; corrected the
+  "skip cleanly" claim (unsupported hosts exit non-zero with a message).
+
 ### Changed
 
 - **CI and release test runs now exclude `Category=LongRunning`**

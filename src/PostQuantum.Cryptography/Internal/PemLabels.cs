@@ -47,8 +47,10 @@ internal static class PemLabels
         if (label == PrivateKey)
         {
             throw new ArgumentException(
-                "This is an unencrypted PKCS#8 private-key PEM. Use ImportPrivateKeyFromPem " +
-                "(no password) instead.",
+                "The first PEM block is an unencrypted PKCS#8 private key. If that key is " +
+                "the one you intend to import, use ImportPrivateKeyFromPem (no password); " +
+                "if you expected an encrypted key, pass a PEM whose first block is " +
+                "-----BEGIN ENCRYPTED PRIVATE KEY-----.",
                 nameof(pem));
         }
 

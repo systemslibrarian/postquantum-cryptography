@@ -20,9 +20,10 @@ dotnet run --project samples/05-DetachedSignatureCli -- help
 dotnet run --project samples/06-SignedPackageDistribution
 ```
 
-The samples skip cleanly with a clear message on hosts where the runtime
-doesn't expose ML-KEM / ML-DSA (see the platform matrix in the top-level
-[`README.md`](../README.md)).
+On hosts where the runtime doesn't expose ML-KEM / ML-DSA, the samples print
+a clear message and exit **non-zero** (they don't pretend to succeed — treat
+that as "unsupported host", not a bug; see the platform matrix in the
+top-level [`README.md`](../README.md)).
 
 ## What's in the box
 
@@ -38,9 +39,13 @@ doesn't expose ML-KEM / ML-DSA (see the platform matrix in the top-level
 ## Reading order
 
 If you're new to the library, work through them in order. 01 → 02 gives you
-the two core primitives (KEM, signatures). 03 shows you how to combine the
+the two core primitives (KEM, signatures) — 02 also shows password-protected
+(encrypted PKCS#8) private keys at rest. 03 shows you how to combine the
 KEM with symmetric crypto for real "encrypt this file" use cases. 04 covers
-performance for high-throughput services. 05 ties it all together as a CLI.
+performance for high-throughput services. 05 ties it all together as a CLI
+(including a `--password` flag for encrypted keys). 06 is the capstone:
+publisher/consumer package signing with a pinned trust anchor and a full set
+of tamper negative tests.
 
 For broader pattern guidance — "how do I do X?" — see
 [`docs/RECIPES.md`](../docs/RECIPES.md).

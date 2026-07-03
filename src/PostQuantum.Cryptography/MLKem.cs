@@ -50,7 +50,16 @@ public sealed class MLKemPublicKey : IDisposable
         : $"MLKemPublicKey ({_kem.Algorithm.Name})";
 
     /// <summary>The ML-KEM parameter set this key belongs to.</summary>
-    public MLKemAlgorithm Algorithm => _kem.Algorithm;
+    public MLKemAlgorithm Algorithm
+    {
+        get
+        {
+            // The BCL property tolerates a disposed handle; we enforce the
+            // documented "disposed keys throw" contract uniformly.
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _kem.Algorithm;
+        }
+    }
 
     /// <summary>
     /// Encapsulates a fresh random shared secret to this public key.
@@ -158,7 +167,16 @@ public sealed class MLKemPrivateKey : IDisposable
         : $"MLKemPrivateKey ({_kem.Algorithm.Name}, secret material redacted)";
 
     /// <summary>The ML-KEM parameter set this key belongs to.</summary>
-    public MLKemAlgorithm Algorithm => _kem.Algorithm;
+    public MLKemAlgorithm Algorithm
+    {
+        get
+        {
+            // The BCL property tolerates a disposed handle; we enforce the
+            // documented "disposed keys throw" contract uniformly.
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _kem.Algorithm;
+        }
+    }
 
     /// <summary>
     /// Returns the public (encapsulation) key corresponding to this private key.

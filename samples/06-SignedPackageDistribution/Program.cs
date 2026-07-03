@@ -56,7 +56,8 @@ byte[] domainContext = Encoding.UTF8.GetBytes("publisher.example/release-channel
 // ---------------------------------------------------------------------------
 
 string publisherPubPath = Path.Combine(publisherDir, "publisher.pub.pem");
-string publisherPrivPath = Path.Combine(publisherDir, "publisher.key.pem"); // would live in HSM/KMS in reality
+string publisherPrivPath = Path.Combine(publisherDir, "publisher.key.pem"); // in reality: an HSM/KMS, or at minimum
+                                                                            // ExportEncryptedPkcs8PrivateKeyPem (see samples 02/05)
 
 using (MLDsaPrivateKey publisherKey = MLDsa87.GenerateKeyPair())
 using (MLDsaPublicKey publisherPub = publisherKey.GetPublicKey())
@@ -132,6 +133,17 @@ using (MLDsaPublicKey roguePub = rogueKey.GetPublicKey())
     VerifyAndReport(downloadedArtifact, downloadedSig, roguePath, domainContext, expect: false, label: "wrong publisher key");
 }
 
+// 4. Tamper with the manifest metadata (bump the version, keep everything
+//    else). The signature covers the manifest bytes, so this must fail.
+SignatureBundle versionBumped = sigBundle with { Manifest = sigBundle.Manifest with { Version = "9.9.9" } };
+File.WriteAllText(downloadedSig, JsonSerializer.Serialize(versionBumped, SignatureBundleJsonContext.Default.SignatureBundle));
+VerifyAndReport(downloadedArtifact, downloadedSig, pinnedKeyPath, domainContext, expect: false, label: "tampered manifest");
+
+// 5. Empty signature.
+SignatureBundle emptySig = sigBundle with { SignatureBase64 = string.Empty };
+File.WriteAllText(downloadedSig, JsonSerializer.Serialize(emptySig, SignatureBundleJsonContext.Default.SignatureBundle));
+VerifyAndReport(downloadedArtifact, downloadedSig, pinnedKeyPath, domainContext, expect: false, label: "empty signature");
+
 return 0;
 
 // ============================ implementation ================================
@@ -191,6 +203,13 @@ static bool VerifyArtifact(string artifactPath, string sigPath, string pinnedPub
         return false;
     }
 
+    // CAVEAT for production copies: this re-serializes the deserialized
+    // manifest and assumes the result is byte-identical to what was signed.
+    // That holds here (same System.Text.Json version, source-generated
+    // contract, no re-encoding hop), but it is brittle across serializer
+    // versions or intermediaries. A hardened format stores the signed
+    // manifest as opaque bytes (e.g. base64 of the exact JSON) and verifies
+    // those received bytes directly.
     byte[] manifestJson = JsonSerializer.SerializeToUtf8Bytes(bundle.Manifest, ReleaseManifestJsonContext.Default.ReleaseManifest);
     byte[] payload = Concat(artifactSha256, manifestJson);
     byte[] signature = Convert.FromBase64String(bundle.SignatureBase64);

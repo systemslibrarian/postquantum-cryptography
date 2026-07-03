@@ -33,17 +33,23 @@ string signaturePath = Path.Combine(workDir, "document.sig");
 byte[] context = Encoding.UTF8.GetBytes("postquantum-sample-02/v1");
 
 // ---------------------------------------------------------------------------
-// 1. Generate keys and persist them as PEM.
+// 1. Generate keys and persist them as PEM. The private key goes to disk
+//    password-protected (encrypted PKCS#8 — PBKDF2-HMAC-SHA256 at 600k
+//    iterations + AES-256-CBC, the library's single fixed policy). In a real
+//    app the password comes from a secret manager or operator prompt, never
+//    from source code.
 // ---------------------------------------------------------------------------
+
+const string keyPassword = "sample-02-demo-password (use a secret manager in production)";
 
 using (MLDsaPrivateKey signer = MLDsa87.GenerateKeyPair())
 using (MLDsaPublicKey verifier = signer.GetPublicKey())
 {
-    File.WriteAllText(privatePemPath, signer.ExportPkcs8PrivateKeyPem());
+    File.WriteAllText(privatePemPath, signer.ExportEncryptedPkcs8PrivateKeyPem(keyPassword));
     File.WriteAllText(publicPemPath, verifier.ExportSubjectPublicKeyInfoPem());
 }
 
-Console.WriteLine($"Persisted PEM keys to {workDir}");
+Console.WriteLine($"Persisted PEM keys to {workDir} (private key encrypted)");
 
 // ---------------------------------------------------------------------------
 // 2. Author the document and sign it with the reloaded key.
@@ -51,7 +57,7 @@ Console.WriteLine($"Persisted PEM keys to {workDir}");
 
 File.WriteAllText(documentPath, "Sworn statement: 2 + 2 = 4.\n");
 
-using (MLDsaPrivateKey signer = MLDsaKey.ImportPrivateKeyFromPem(File.ReadAllText(privatePemPath)))
+using (MLDsaPrivateKey signer = MLDsaKey.ImportEncryptedPrivateKeyFromPem(keyPassword, File.ReadAllText(privatePemPath)))
 {
     byte[] document = File.ReadAllBytes(documentPath);
     byte[] signature = signer.SignData(document, context);
