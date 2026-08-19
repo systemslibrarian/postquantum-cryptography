@@ -12,7 +12,7 @@
     <!-- Test-only differential reference for X25519. NOT a dependency of the
          library itself; this PackageReference lives on the tests project only
          so it never reaches the published .nupkg or its consumers. -->
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
   </ItemGroup>
 
   <ItemGroup>
