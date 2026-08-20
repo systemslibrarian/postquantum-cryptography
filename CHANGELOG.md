@@ -7,6 +7,17 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-08-20
+
+Patch: dependency maintenance. No public API change and no behavioural change; a drop-in over 1.1.0.
+
+### Changed
+
+- Test and CI toolchain updated — the test-stack and microsoft-analyzers dependency groups,
+  `BouncyCastle.Cryptography` 2.4.0 → 2.7.0 in the test project, and the GitHub Actions used by
+  CI and release. None of these reach the published package: `PostQuantum.Cryptography` itself has
+  no consumer-visible dependency change in this release.
+
 ## [1.1.0] — 2026-07-03
 
 Feature and assurance release: encrypted PKCS#8, third-party vector
