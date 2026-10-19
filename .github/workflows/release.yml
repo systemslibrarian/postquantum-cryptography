@@ -157,7 +157,7 @@ jobs:
         # the .nupkg — the attested hashes must match the published bytes.
         # Complements (does not replace) author signing, which is currently
         # unfunded — see KNOWN-GAPS.md.
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             ./artifacts/packages/*.nupkg
